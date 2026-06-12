@@ -1,0 +1,95 @@
+import '../global.css';
+
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import {
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
+import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { ThemeProvider } from '@react-navigation/native';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
+import { useColorScheme } from 'nativewind';
+import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+import { queryClient } from '@/api/query-client';
+import { ToastHost } from '@/components/ui';
+import { useAuthStore } from '@/stores/auth';
+import { usePreferences } from '@/stores/preferences';
+import { useStoreProfile } from '@/stores/store-profile';
+import { navigationThemes } from '@/theme/navigation';
+
+SplashScreen.preventAutoHideAsync();
+
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    SpaceMono_400Regular,
+    SpaceMono_700Bold,
+  });
+
+  const user = useAuthStore((s) => s.user);
+  const authHydrated = useAuthStore((s) => s.hasHydrated);
+  const store = useStoreProfile((s) => s.store);
+  const storeHydrated = useStoreProfile((s) => s.hasHydrated);
+  const themeMode = usePreferences((s) => s.themeMode);
+  const prefsHydrated = usePreferences((s) => s.hasHydrated);
+
+  const { colorScheme, setColorScheme } = useColorScheme();
+
+  useEffect(() => {
+    if (prefsHydrated) setColorScheme(themeMode);
+  }, [prefsHydrated, themeMode, setColorScheme]);
+
+  const ready = fontsLoaded && authHydrated && storeHydrated && prefsHydrated;
+
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return null;
+
+  const signedIn = user !== null;
+  const onboarded = store !== null;
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider value={navigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>
+          <BottomSheetModalProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Protected guard={!signedIn}>
+                <Stack.Screen name="(auth)" />
+              </Stack.Protected>
+              <Stack.Protected guard={signedIn && !onboarded}>
+                <Stack.Screen name="onboarding" />
+              </Stack.Protected>
+              <Stack.Protected guard={signedIn && onboarded}>
+                <Stack.Screen name="(merchant)" />
+              </Stack.Protected>
+            </Stack>
+            <ToastHost />
+            <StatusBar style="auto" />
+          </BottomSheetModalProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
+  );
+}
