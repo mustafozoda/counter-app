@@ -1,5 +1,6 @@
+import { useRouter } from 'expo-router';
 import { ArrowDownLeft, ArrowUpRight, CalendarClock, PackageSearch, Trophy } from 'lucide-react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -18,6 +19,8 @@ import {
   mockDashboard,
   type DashboardPeriod,
 } from '@/features/dashboard/mock';
+import { lowStockProducts } from '@/features/products/filtering';
+import { useProducts } from '@/features/products/hooks';
 import { formatCompact } from '@/lib/format';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
@@ -36,11 +39,18 @@ const comingSoon = (feature: string, phase: string) => () =>
 
 export default function HomeScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const store = useStoreProfile((s) => s.store);
   const [period, setPeriod] = useState<DashboardPeriod>('today');
+  const productsQuery = useProducts();
 
   const currency = store?.currencyCode ?? 'USD';
   const snapshot = mockDashboard[period];
+  // Live low-stock count from the real catalog (the rest stays mock until Phase 4).
+  const lowStockCount = useMemo(
+    () => lowStockProducts(productsQuery.data ?? []).length,
+    [productsQuery.data],
+  );
   const enter = (index: number) =>
     FadeInDown.delay(STAGGER_MS * index)
       .springify()
@@ -83,10 +93,7 @@ export default function HomeScreen() {
           className="flex-1"
           onPress={comingSoon('Orders', 'Phase 3')}
         />
-        <Card
-          className="flex-1 justify-between gap-2"
-          onPress={comingSoon('Inventory', 'Phase 1')}
-        >
+        <Card className="flex-1 justify-between gap-2" onPress={() => router.push('/low-stock')}>
           <View className="flex-row items-center justify-between">
             <Text variant="caption" weight="medium" tone="secondary">
               Low stock
@@ -96,10 +103,10 @@ export default function HomeScreen() {
             </View>
           </View>
           <Text variant="displaySm" weight="semibold" tabular>
-            {formatCompact(snapshot.lowStockCount)}
+            {formatCompact(lowStockCount)}
           </Text>
           <Text variant="micro" tone="tertiary">
-            items need a restock
+            {lowStockCount === 0 ? 'all stocked up' : 'items need a restock'}
           </Text>
         </Card>
       </Animated.View>

@@ -8,6 +8,14 @@ export default function MerchantLayout() {
         name="sell"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
+      <Stack.Screen
+        name="scan"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen name="product/[id]" />
+      <Stack.Screen name="product-form" />
+      <Stack.Screen name="low-stock" />
+      <Stack.Screen name="categories" />
     </Stack>
   );
 }

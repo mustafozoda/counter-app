@@ -23,6 +23,7 @@ interface StoreProfileState {
   firstProductDraft: FirstProductDraft | null;
   hasHydrated: boolean;
   completeSetup: (input: StoreSetupInput, firstProduct: FirstProductDraft | null) => void;
+  clearFirstProductDraft: () => void;
   updateStore: (patch: Partial<Omit<Store, 'id' | 'createdAt'>>) => void;
   reset: () => void;
   setHasHydrated: (value: boolean) => void;
@@ -54,6 +55,8 @@ export const useStoreProfile = create<StoreProfileState>()(
           },
           firstProductDraft: firstProduct,
         }),
+
+      clearFirstProductDraft: () => set({ firstProductDraft: null }),
 
       updateStore: (patch) =>
         set((state) => (state.store ? { store: { ...state.store, ...patch } } : state)),
