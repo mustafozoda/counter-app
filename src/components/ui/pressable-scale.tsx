@@ -1,54 +1,43 @@
-import { cssInterop } from 'nativewind';
 import { forwardRef } from 'react';
 import { Pressable, type PressableProps, type View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
+import { cn } from '@/lib/cn';
 import { haptics } from '@/lib/haptics';
-import { springs } from '@/theme';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-// NativeWind only auto-maps className on registered components; wrapped
-// animated components need explicit registration.
-cssInterop(AnimatedPressable, { className: 'style' });
 
 export interface PressableScaleProps extends PressableProps {
-  /** Scale while pressed. */
+  /** Scale while pressed (smaller = more pronounced). */
   scaleTo?: number;
   haptic?: 'tap' | 'press' | 'selection' | 'none';
   className?: string;
 }
 
 /**
- * Base tactile surface: spring scale on press + DS haptics. Button, Card,
- * Chip and the tab bar all build on this so the whole app shares one touch
- * physics model.
+ * Base tactile surface: a press-scale via NativeWind's `active:` variant plus
+ * DS haptics. Button, Card, Chip and the tab bar build on this.
+ *
+ * Note: this is a plain Pressable (not a Reanimated `createAnimatedComponent`).
+ * Putting a `useAnimatedStyle` value in the `style` array of a custom animated
+ * component drops NativeWind className styles (flex/layout), which collapses
+ * every consumer's layout — so the press animation is CSS-driven here.
  */
 export const PressableScale = forwardRef<View, PressableScaleProps>(function PressableScale(
-  { scaleTo = 0.97, haptic = 'tap', onPressIn, onPress, style, ...rest },
+  { scaleTo = 0.97, haptic = 'tap', onPress, className, children, ...rest },
   ref,
 ) {
-  const pressed = useSharedValue(0);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pressed.value * (scaleTo - 1) }],
-  }));
+  // Standard Tailwind scale utilities (static classes the compiler can see).
+  const pressClass = scaleTo <= 0.92 ? 'active:scale-90' : 'active:scale-95';
 
   return (
-    <AnimatedPressable
+    <Pressable
       ref={ref}
-      style={[animatedStyle, style as object]}
-      onPressIn={(e) => {
-        pressed.value = withSpring(1, springs.snappy);
-        onPressIn?.(e);
-      }}
-      onPressOut={() => {
-        pressed.value = withSpring(0, springs.standard);
-      }}
+      className={cn(pressClass, className)}
       onPress={(e) => {
         if (haptic !== 'none') haptics[haptic]();
         onPress?.(e);
       }}
       {...rest}
-    />
+    >
+      {children}
+    </Pressable>
   );
 });
