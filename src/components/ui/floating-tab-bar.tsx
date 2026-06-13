@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Keyboard, Platform, StyleSheet, View } from 'react-native';
 import Animated, {
   interpolate,
@@ -27,11 +28,12 @@ import { springs, useTheme } from '@/theme';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
 
-const TAB_META: Record<string, { icon: LucideIcon; label: string }> = {
-  index: { icon: LayoutDashboard, label: 'Home' },
-  products: { icon: Package, label: 'Products' },
-  orders: { icon: ReceiptText, label: 'Orders' },
-  more: { icon: Menu, label: 'More' },
+// label is a translation key under `nav.*`, resolved at render.
+const TAB_META: Record<string, { icon: LucideIcon; labelKey: string }> = {
+  index: { icon: LayoutDashboard, labelKey: 'nav.home' },
+  products: { icon: Package, labelKey: 'nav.products' },
+  orders: { icon: ReceiptText, labelKey: 'nav.orders' },
+  more: { icon: Menu, labelKey: 'nav.more' },
 };
 
 interface TabItemProps {
@@ -94,6 +96,7 @@ function TabItem({ icon: Icon, label, focused, onPress }: TabItemProps) {
 
 function SellButton({ onPress }: { onPress: () => void }) {
   const { colors, gradient } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <View className="w-[76px] items-center">
@@ -102,7 +105,7 @@ function SellButton({ onPress }: { onPress: () => void }) {
         scaleTo={0.88}
         haptic="press"
         accessibilityRole="button"
-        accessibilityLabel="Sell — open point of sale"
+        accessibilityLabel={t('nav.sell')}
         className="-mt-9"
         style={{
           shadowColor: colors.primary,
@@ -122,7 +125,7 @@ function SellButton({ onPress }: { onPress: () => void }) {
         </LinearGradient>
       </PressableScale>
       <Text variant="micro" weight="semibold" tone="accent" className="mt-1">
-        Sell
+        {t('nav.sell')}
       </Text>
     </View>
   );
@@ -137,6 +140,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const { colors, shadows, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useTranslation();
   const keyboardShown = useSharedValue(0);
 
   useEffect(() => {
@@ -180,7 +184,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
       <TabItem
         key={route.key}
         icon={meta.icon}
-        label={meta.label}
+        label={t(meta.labelKey)}
         focused={focused}
         onPress={() => handleTabPress(route.name, route.key, focused)}
       />

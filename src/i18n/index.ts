@@ -4,7 +4,7 @@ import { initReactI18next } from 'react-i18next';
 
 import { RTL_LANGUAGES, resources, type LanguageCode } from './translations';
 
-const SUPPORTED: LanguageCode[] = ['en', 'es', 'ru', 'ar'];
+const SUPPORTED: LanguageCode[] = ['en', 'ru', 'tg'];
 
 /** Best supported language for the device, falling back to English. */
 export function deviceLanguage(): LanguageCode {
@@ -28,8 +28,8 @@ export function initI18n(preferred: LanguageCode | null): void {
     lng: preferred ?? deviceLanguage(),
     fallbackLng: 'en',
     interpolation: { escapeValue: false },
-    // RN has no Intl plural rules in some engines; keep it simple.
-    compatibilityJSON: 'v4',
+    // Hermes lacks Intl.PluralRules; v3 uses suffix-based plurals (no Intl).
+    compatibilityJSON: 'v3',
   });
 }
 

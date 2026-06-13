@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -40,8 +41,8 @@ import { shareCatalogCsv } from '@/features/products/export';
 import {
   defaultCatalogFilter,
   filterProducts,
-  SORT_OPTIONS,
   type CatalogFilter,
+  type ProductSort,
   type StockFilter,
 } from '@/features/products/filtering';
 import {
@@ -57,15 +58,25 @@ import { toast } from '@/stores/toast';
 import { useTheme } from '@/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const STOCK_CHIPS: { value: StockFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'low', label: 'Low' },
-  { value: 'out', label: 'Out' },
+const STOCK_CHIPS: { value: StockFilter; labelKey: string }[] = [
+  { value: 'all', labelKey: 'common.all' },
+  { value: 'low', labelKey: 'products.low' },
+  { value: 'out', labelKey: 'products.out' },
 ];
+
+/** Sort value → translation key for the sort chip + sheet. */
+export const SORT_KEY: Record<ProductSort, string> = {
+  newest: 'products.sortNewest',
+  name: 'products.sortName',
+  'price-asc': 'products.sortPriceAsc',
+  'price-desc': 'products.sortPriceDesc',
+  'stock-asc': 'products.sortStock',
+};
 
 export default function ProductsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const productsQuery = useProducts();
@@ -86,7 +97,7 @@ export default function ProductsScreen() {
   const currentCount = products.filter((p) => p.status !== 'archived').length;
   const hasAnyCurrent = currentCount > 0;
   const selectedCategory = categories.find((c) => c.id === filter.categoryId);
-  const sortLabel = SORT_OPTIONS.find((o) => o.value === filter.sort)?.label ?? 'Sort';
+  const sortLabel = t(SORT_KEY[filter.sort]);
 
   const patchFilter = (patch: Partial<CatalogFilter>) => setFilter((f) => ({ ...f, ...patch }));
 
@@ -96,7 +107,7 @@ export default function ProductsScreen() {
       { id: product.id, status: archiving ? 'archived' : 'active' },
       {
         onSuccess: () =>
-          toast.success(archiving ? 'Product archived' : 'Product restored', product.name),
+          toast.success(archiving ? t('products.archive') : t('products.restore'), product.name),
       },
     );
   };
@@ -110,13 +121,13 @@ export default function ProductsScreen() {
         actions={[
           {
             icon: Pencil,
-            label: 'Edit',
+            label: t('products.edit'),
             tone: 'accent',
             onPress: () => router.push({ pathname: '/product-form', params: { id: item.id } }),
           },
           item.status === 'archived'
-            ? { icon: ArchiveRestore, label: 'Restore', tone: 'accent', onPress: () => toggleArchive(item) }
-            : { icon: Archive, label: 'Archive', tone: 'caution', onPress: () => toggleArchive(item) },
+            ? { icon: ArchiveRestore, label: t('products.restore'), tone: 'accent', onPress: () => toggleArchive(item) }
+            : { icon: Archive, label: t('products.archive'), tone: 'caution', onPress: () => toggleArchive(item) },
         ]}
       >
         <ProductCard
@@ -133,26 +144,26 @@ export default function ProductsScreen() {
       <SearchBar
         value={filter.query}
         onChangeText={(query) => patchFilter({ query })}
-        placeholder="Name, brand, SKU or barcode"
+        placeholder={t('products.searchPlaceholder')}
       />
       <View className="flex-row flex-wrap items-center gap-2">
         <Chip
           icon={SlidersHorizontal}
-          label={selectedCategory?.name ?? 'All categories'}
+          label={selectedCategory?.name ?? t('products.allCategories')}
           selected={filter.categoryId !== null}
           onPress={() => categorySheet.current?.present()}
         />
         {STOCK_CHIPS.map((chip) => (
           <Chip
             key={chip.value}
-            label={chip.label}
+            label={t(chip.labelKey)}
             selected={filter.stock === chip.value}
             onPress={() => patchFilter({ stock: chip.value })}
           />
         ))}
         <Chip icon={ArrowUpDown} label={sortLabel} onPress={() => sortSheet.current?.present()} />
         {filter.archived ? (
-          <Chip label="Archived ×" selected onPress={() => patchFilter({ archived: false })} />
+          <Chip label={`${t('products.archived')} ×`} selected onPress={() => patchFilter({ archived: false })} />
         ) : null}
       </View>
     </View>
@@ -163,29 +174,29 @@ export default function ProductsScreen() {
       <View className="flex-row items-center justify-between px-5 pb-3 pt-2">
         <View>
           <Text variant="h1" weight="bold">
-            Products
+            {t('products.title')}
           </Text>
           {hasAnyCurrent ? (
             <Text variant="caption" tone="tertiary">
-              {currentCount} in catalog
+              {t('products.inCatalog', { count: currentCount })}
             </Text>
           ) : null}
         </View>
         <View className="flex-row items-center gap-2">
           <IconButton
             icon={ScanBarcode}
-            accessibilityLabel="Scan a barcode"
+            accessibilityLabel={t('nav.sell')}
             onPress={() => router.push('/scan')}
           />
           <IconButton
             icon={MoreVertical}
-            accessibilityLabel="Catalog actions"
+            accessibilityLabel={t('products.catalog')}
             onPress={() => actionsSheet.current?.present()}
           />
           <IconButton
             icon={Plus}
             variant="tonal"
-            accessibilityLabel="Add product"
+            accessibilityLabel={t('products.addProduct')}
             onPress={() => router.push('/product-form')}
           />
         </View>
@@ -202,14 +213,14 @@ export default function ProductsScreen() {
         <View className="flex-1 justify-center pb-24">
           <EmptyState
             icon={PackageOpen}
-            title="Stock your shelves"
-            message="Add your first product, or start from a sample catalog to explore."
-            actionLabel="Add a product"
+            title={t('products.emptyTitle')}
+            message={t('products.emptyMessage')}
+            actionLabel={t('products.addProduct')}
             onAction={() => router.push('/product-form')}
           />
           <View className="items-center">
             <Button
-              label="Add sample catalog"
+              label={t('products.addSample')}
               variant="ghost"
               icon={Sparkles}
               loading={addSamples.isPending}
@@ -229,13 +240,9 @@ export default function ProductsScreen() {
           ListEmptyComponent={
             <EmptyState
               icon={PackageSearch}
-              title="Nothing matches"
-              message={
-                filter.archived
-                  ? 'No archived products here.'
-                  : 'Try a different search or clear the filters.'
-              }
-              actionLabel="Clear filters"
+              title={t('products.noMatchTitle')}
+              message={filter.archived ? t('products.noArchived') : t('products.noMatchMessage')}
+              actionLabel={t('products.clearFilters')}
               onAction={() => setFilter(defaultCatalogFilter)}
             />
           }
@@ -246,7 +253,7 @@ export default function ProductsScreen() {
         ref={categorySheet}
         categories={categories}
         selected={filter.categoryId}
-        nullLabel="All categories"
+        nullLabel={t('products.allCategories')}
         onSelect={(categoryId) => patchFilter({ categoryId })}
         dismiss={() => categorySheet.current?.dismiss()}
       />
@@ -257,13 +264,13 @@ export default function ProductsScreen() {
         dismiss={() => sortSheet.current?.dismiss()}
       />
 
-      <Sheet ref={actionsSheet} title="Catalog">
+      <Sheet ref={actionsSheet} title={t('products.catalog')}>
         <View className="gap-1">
           {(
             [
               {
                 icon: FolderTree,
-                label: 'Manage categories',
+                label: t('products.manageCategories'),
                 onPress: () => {
                   actionsSheet.current?.dismiss();
                   router.push('/categories');
@@ -271,7 +278,7 @@ export default function ProductsScreen() {
               },
               {
                 icon: PackageSearch,
-                label: 'Low stock',
+                label: t('products.lowStockView'),
                 onPress: () => {
                   actionsSheet.current?.dismiss();
                   router.push('/low-stock');
@@ -279,7 +286,7 @@ export default function ProductsScreen() {
               },
               {
                 icon: Share2,
-                label: 'Export CSV',
+                label: t('products.exportCsv'),
                 onPress: () => {
                   actionsSheet.current?.dismiss();
                   void shareCatalogCsv(products, categories);
@@ -287,7 +294,7 @@ export default function ProductsScreen() {
               },
               {
                 icon: filter.archived ? ArchiveRestore : Archive,
-                label: filter.archived ? 'Show current products' : 'Show archived',
+                label: filter.archived ? t('products.showCurrent') : t('products.showArchived'),
                 onPress: () => {
                   patchFilter({ archived: !filter.archived });
                   actionsSheet.current?.dismiss();
