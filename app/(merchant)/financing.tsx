@@ -41,7 +41,7 @@ const STATUS_BADGE: Record<FinancingPlanStatus, { label: string; tone: 'positive
 
 export default function FinancingScreen() {
   const router = useRouter();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const plansQuery = usePlans();
   const customers = useCustomers().data ?? [];
   const [filter, setFilter] = useState<Filter>('active');

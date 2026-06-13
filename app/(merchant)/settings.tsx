@@ -44,7 +44,7 @@ export default function SettingsScreen() {
   const [name, setName] = useState(store?.name ?? '');
   const [address, setAddress] = useState(store?.address ?? '');
   const [taxRate, setTaxRate] = useState(store ? String(store.taxRate * 100) : '0');
-  const [currencyCode, setCurrencyCode] = useState(store?.currencyCode ?? 'USD');
+  const [currencyCode, setCurrencyCode] = useState(store?.currencyCode ?? 'TJS');
   const [header, setHeader] = useState(store?.receipt.headerText ?? '');
   const [footer, setFooter] = useState(store?.receipt.footerText ?? '');
   const [showLogo, setShowLogo] = useState(store?.receipt.showLogo ?? true);

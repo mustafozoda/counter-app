@@ -2,13 +2,14 @@ import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PackageSearch } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Chip, EmptyState, SearchBar, Skeleton, Text } from '@/components/ui';
 import { useCategories, useProducts } from '@/features/products/hooks';
 import { priceRange, productStockStatus, type ProductWithVariants } from '@/features/products/stock';
 import { StorefrontProductCard } from '@/features/storefront/components/storefront-product-card';
+import { useContentWidth } from '@/lib/responsive';
 import { useStoreProfile } from '@/stores/store-profile';
 
 type Sort = 'featured' | 'price-asc' | 'price-desc';
@@ -16,8 +17,8 @@ type Sort = 'featured' | 'price-asc' | 'price-desc';
 export default function StorefrontCatalog() {
   const router = useRouter();
   const params = useLocalSearchParams<{ category?: string }>();
-  const { width } = useWindowDimensions();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const width = useContentWidth();
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const productsQuery = useProducts();
   const categories = useCategories().data ?? [];

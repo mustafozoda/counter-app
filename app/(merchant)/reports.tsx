@@ -32,7 +32,7 @@ const RANGE_OPTIONS: { label: string; value: RangeKey }[] = [
 export default function ReportsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const ordersQuery = useOrders();
   const [range, setRange] = useState<RangeKey>('30');

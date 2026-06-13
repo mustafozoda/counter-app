@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Store, Tag, X } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,14 +12,15 @@ import { productStockStatus } from '@/features/products/stock';
 import { usePromotions } from '@/features/promotions/hooks';
 import { isPromotionLive, promotionSummary } from '@/features/promotions/validity';
 import { StorefrontProductCard } from '@/features/storefront/components/storefront-product-card';
+import { useContentWidth } from '@/lib/responsive';
 import { useStoreProfile } from '@/stores/store-profile';
 import { brandGradient } from '@/theme';
 
 export default function StorefrontHome() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const width = useContentWidth();
   const store = useStoreProfile((s) => s.store);
-  const currency = store?.currencyCode ?? 'USD';
+  const currency = store?.currencyCode ?? 'TJS';
 
   const productsQuery = useProducts();
   const categories = useCategories().data ?? [];

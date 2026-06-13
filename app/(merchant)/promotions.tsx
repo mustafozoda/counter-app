@@ -40,7 +40,7 @@ const TYPE_OPTIONS: { label: string; value: PromotionType }[] = [
 
 export default function PromotionsScreen() {
   const router = useRouter();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const symbol = getCurrencySpec(currency).symbol;
 
   const promotionsQuery = usePromotions();

@@ -13,7 +13,7 @@ import { useTheme } from '@/theme';
 export default function OrdersScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const ordersQuery = useOrders();
   const orders = ordersQuery.data ?? [];
 

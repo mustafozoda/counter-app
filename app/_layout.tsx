@@ -21,12 +21,13 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
-import { I18nManager } from 'react-native';
+import { I18nManager, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { queryClient } from '@/api/query-client';
 import { ToastHost } from '@/components/ui';
 import { changeLanguage, deviceLanguage, initI18n, isRtlLanguage } from '@/i18n';
+import { APP_FRAME_WIDTH } from '@/lib/responsive';
 import { useAuthStore } from '@/stores/auth';
 import { usePreferences } from '@/stores/preferences';
 import { useStoreProfile } from '@/stores/store-profile';
@@ -88,28 +89,36 @@ export default function RootLayout() {
   const signedIn = user !== null;
   const onboarded = store !== null;
 
+  // On web, frame the app to a phone-width column centered on a dark backdrop
+  // so a desktop browser preview matches a real phone. Native fills the screen.
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider value={navigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>
-          <BottomSheetModalProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Protected guard={!signedIn}>
-                <Stack.Screen name="(auth)" />
-              </Stack.Protected>
-              <Stack.Protected guard={signedIn && !onboarded}>
-                <Stack.Screen name="onboarding" />
-              </Stack.Protected>
-              <Stack.Protected guard={signedIn && onboarded}>
-                <Stack.Screen name="(merchant)" />
-                <Stack.Screen name="(storefront)" />
-              </Stack.Protected>
-            </Stack>
-            <ToastHost />
-            <StatusBar style="auto" />
-          </BottomSheetModalProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
+    <GestureHandlerRootView
+      style={isWeb ? { flex: 1, alignItems: 'center', backgroundColor: '#000000' } : { flex: 1 }}
+    >
+      <View style={isWeb ? { flex: 1, width: '100%', maxWidth: APP_FRAME_WIDTH } : { flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider value={navigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>
+            <BottomSheetModalProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Protected guard={!signedIn}>
+                  <Stack.Screen name="(auth)" />
+                </Stack.Protected>
+                <Stack.Protected guard={signedIn && !onboarded}>
+                  <Stack.Screen name="onboarding" />
+                </Stack.Protected>
+                <Stack.Protected guard={signedIn && onboarded}>
+                  <Stack.Screen name="(merchant)" />
+                  <Stack.Screen name="(storefront)" />
+                </Stack.Protected>
+              </Stack>
+              <ToastHost />
+              <StatusBar style="auto" />
+            </BottomSheetModalProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </View>
     </GestureHandlerRootView>
   );
 }

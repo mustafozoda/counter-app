@@ -46,7 +46,7 @@ export default function SupplierDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const symbol = getCurrencySpec(currency).symbol;
 
   const supplierQuery = useSupplier(id);

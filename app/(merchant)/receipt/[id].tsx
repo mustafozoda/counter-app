@@ -29,7 +29,7 @@ export default function ReceiptScreen() {
   const store = useStoreProfile((s) => s.store);
   const orderQuery = useOrder(id);
   const order = orderQuery.data;
-  const currency = store?.currencyCode ?? 'USD';
+  const currency = store?.currencyCode ?? 'TJS';
 
   return (
     <Screen padded={false}>

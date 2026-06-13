@@ -1,19 +1,20 @@
 import { useRouter } from 'expo-router';
 import { Heart } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { useWindowDimensions, View, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState, Text } from '@/components/ui';
 import { useProducts } from '@/features/products/hooks';
 import { StorefrontProductCard } from '@/features/storefront/components/storefront-product-card';
+import { useContentWidth } from '@/lib/responsive';
 import { useStoreProfile } from '@/stores/store-profile';
 import { useWishlist } from '@/stores/wishlist';
 
 export default function StorefrontWishlist() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const width = useContentWidth();
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const productIds = useWishlist((s) => s.productIds);
   const productsQuery = useProducts();
 
