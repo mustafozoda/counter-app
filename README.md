@@ -66,7 +66,7 @@ offline-first POS phase.
 ## Roadmap
 
 - [x] **Phase 0** — design system, navigation shell, auth, onboarding wizard
-- [ ] **Phase 1** — inventory: products, categories, variants, barcode, low stock
+- [x] **Phase 1** — inventory: products, categories, variants, barcode, low stock
 - [ ] **Phase 2** — POS: cart, checkout, receipts, offline
 - [ ] **Phase 3** — orders & customers (CRM)
 - [ ] **Phase 4** — dashboard + finance/bookkeeping
