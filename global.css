@@ -34,29 +34,33 @@
   --color-info-tint: 224 242 254; /* #E0F2FE */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: 11 11 15; /* #0B0B0F */
-    --color-surface: 21 21 27; /* #15151B */
-    --color-surface-sunken: 16 16 21; /* #101015 */
-    --color-surface-elevated: 28 28 36; /* #1C1C24 */
-    --color-hairline: 38 38 47; /* #26262F */
+/**
+ * Dark tokens apply when NativeWind adds the `dark` class to the root
+ * (driven by setColorScheme: light/dark, or the OS in system mode). This
+ * pairs with `darkMode: 'class'` in tailwind.config.js and works on web and
+ * native alike — a manual toggle can't drive a `prefers-color-scheme` query.
+ */
+.dark:root {
+  --color-background: 11 11 15; /* #0B0B0F */
+  --color-surface: 21 21 27; /* #15151B */
+  --color-surface-sunken: 16 16 21; /* #101015 */
+  --color-surface-elevated: 28 28 36; /* #1C1C24 */
+  --color-hairline: 38 38 47; /* #26262F */
 
-    --color-ink: 245 245 247; /* #F5F5F7 */
-    --color-ink-secondary: 161 161 171; /* #A1A1AB */
-    --color-ink-tertiary: 113 113 124; /* #71717C */
+  --color-ink: 245 245 247; /* #F5F5F7 */
+  --color-ink-secondary: 161 161 171; /* #A1A1AB */
+  --color-ink-tertiary: 113 113 124; /* #71717C */
 
-    --color-primary: 99 102 241; /* #6366F1 */
-    --color-primary-tint: 36 36 64; /* #242440 */
-    --color-on-primary: 255 255 255;
+  --color-primary: 99 102 241; /* #6366F1 */
+  --color-primary-tint: 36 36 64; /* #242440 */
+  --color-on-primary: 255 255 255;
 
-    --color-positive: 74 222 128; /* #4ADE80 */
-    --color-positive-tint: 16 46 31; /* #102E1F */
-    --color-caution: 251 191 36; /* #FBBF24 */
-    --color-caution-tint: 58 42 12; /* #3A2A0C */
-    --color-negative: 251 113 133; /* #FB7185 */
-    --color-negative-tint: 63 18 32; /* #3F1220 */
-    --color-info: 56 189 248; /* #38BDF8 */
-    --color-info-tint: 12 45 64; /* #0C2D40 */
-  }
+  --color-positive: 74 222 128; /* #4ADE80 */
+  --color-positive-tint: 16 46 31; /* #102E1F */
+  --color-caution: 251 191 36; /* #FBBF24 */
+  --color-caution-tint: 58 42 12; /* #3A2A0C */
+  --color-negative: 251 113 133; /* #FB7185 */
+  --color-negative-tint: 63 18 32; /* #3F1220 */
+  --color-info: 56 189 248; /* #38BDF8 */
+  --color-info-tint: 12 45 64; /* #0C2D40 */
 }

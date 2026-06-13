@@ -7,6 +7,9 @@ const token = (name) => `rgb(var(--color-${name}) / <alpha-value>)`;
 module.exports = {
   content: ['./app/**/*.{ts,tsx}', './src/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
+  // Class-based dark mode so the app can switch light/dark/system manually
+  // via NativeWind's setColorScheme (required on web; consistent on native).
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
