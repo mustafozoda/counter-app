@@ -23,6 +23,7 @@ import {
 } from '@/components/ui';
 import { CartSheet } from '@/features/pos/components/cart-sheet';
 import { CheckoutView } from '@/features/pos/components/checkout-view';
+import { CustomerAttachSheet } from '@/features/pos/components/customer-attach-sheet';
 import { DiscountSheet } from '@/features/pos/components/discount-sheet';
 import { ProductTile } from '@/features/pos/components/product-tile';
 import { VariantPickerSheet } from '@/features/pos/components/variant-picker-sheet';
@@ -60,6 +61,9 @@ export default function SellScreen() {
 
   const lines = useCartStore((s) => s.lines);
   const discount = useCartStore((s) => s.discount);
+  const customerId = useCartStore((s) => s.customerId);
+  const customerName = useCartStore((s) => s.customerName);
+  const setCustomer = useCartStore((s) => s.setCustomer);
   const addLine = useCartStore((s) => s.addLine);
   const clearCart = useCartStore((s) => s.clear);
 
@@ -72,6 +76,7 @@ export default function SellScreen() {
   const cartSheet = useSheetRef();
   const variantSheet = useSheetRef();
   const discountSheet = useSheetRef();
+  const customerSheet = useSheetRef();
 
   const totals = computeTotals(lines, discount);
   const tileWidth = (screenWidth - GRID_GUTTER * 2 - GRID_GAP) / 2;
@@ -132,7 +137,7 @@ export default function SellScreen() {
 
   const completeSale = (payments: PaymentEntry[], change: number) => {
     createSale.mutate(
-      { lines, totals, payments, customerId: null },
+      { lines, totals, payments, customerId },
       {
         onSuccess: (order) => {
           haptics.success();
@@ -222,7 +227,15 @@ export default function SellScreen() {
           currency={currency}
           totals={totals}
           busy={createSale.isPending}
+          customerName={customerName}
+          onPressCustomer={() => customerSheet.current?.present()}
           onComplete={completeSale}
+        />
+        <CustomerAttachSheet
+          ref={customerSheet}
+          attachedId={customerId}
+          onAttach={setCustomer}
+          dismiss={() => customerSheet.current?.dismiss()}
         />
       </Screen>
     );

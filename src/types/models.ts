@@ -143,6 +143,22 @@ export interface Order {
 
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'installment';
 
+export interface RefundItem {
+  orderItemId: Id;
+  qty: number;
+}
+
+export interface Refund {
+  id: Id;
+  orderId: Id;
+  items: RefundItem[];
+  /** Money returned to the customer (proportional share of the order total). */
+  amount: number;
+  restocked: boolean;
+  reason: string | null;
+  createdAt: string;
+}
+
 export interface Payment {
   id: Id;
   orderId: Id;
@@ -198,6 +214,8 @@ export interface Transaction {
   note: string;
   date: string;
   linkedOrderId: Id | null;
+  /** Photo of the paper receipt for expenses. */
+  receiptUri?: string | null;
 }
 
 // ---------------------------------------------------------------------------

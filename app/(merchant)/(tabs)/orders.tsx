@@ -57,20 +57,26 @@ export default function OrdersScreen() {
               <Card
                 padded={false}
                 className="flex-row items-center gap-3 px-4 py-3.5"
-                onPress={() => router.push({ pathname: '/receipt/[id]', params: { id: order.id } })}
+                onPress={() => router.push({ pathname: '/order/[id]', params: { id: order.id } })}
               >
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
                     <Text variant="body" weight="semibold" tabular>
                       {order.number}
                     </Text>
-                    <Badge
-                      label={order.payments
-                        .map((p) => PAYMENT_METHOD_LABELS[p.method])
-                        .filter((v, i, a) => a.indexOf(v) === i)
-                        .join(' + ')}
-                      tone="accent"
-                    />
+                    {order.paymentStatus === 'refunded' ? (
+                      <Badge label="Refunded" tone="negative" />
+                    ) : order.paymentStatus === 'partial' ? (
+                      <Badge label="Partial refund" tone="caution" />
+                    ) : (
+                      <Badge
+                        label={order.payments
+                          .map((p) => PAYMENT_METHOD_LABELS[p.method])
+                          .filter((v, i, a) => a.indexOf(v) === i)
+                          .join(' + ')}
+                        tone="accent"
+                      />
+                    )}
                   </View>
                   <Text variant="caption" tone="tertiary">
                     {formatDayLabel(new Date(order.createdAt))} · {order.items.length} item

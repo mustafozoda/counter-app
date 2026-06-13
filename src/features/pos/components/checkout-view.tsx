@@ -1,8 +1,10 @@
 import {
   Banknote,
   CalendarClock,
+  ChevronRight,
   CreditCard,
   Landmark,
+  UserRound,
   X,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -36,11 +38,20 @@ export interface CheckoutViewProps {
   currency: string;
   totals: CartTotals;
   busy: boolean;
+  customerName: string | null;
+  onPressCustomer: () => void;
   onComplete: (payments: PaymentEntry[], change: number) => void;
 }
 
 /** Payment collection: one-tap single payments or any split that reaches zero. */
-export function CheckoutView({ currency, totals, busy, onComplete }: CheckoutViewProps) {
+export function CheckoutView({
+  currency,
+  totals,
+  busy,
+  customerName,
+  onPressCustomer,
+  onComplete,
+}: CheckoutViewProps) {
   const { colors } = useTheme();
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [method, setMethod] = useState<PaymentMethod>('cash');
@@ -96,6 +107,20 @@ export function CheckoutView({ currency, totals, busy, onComplete }: CheckoutVie
           </Text>
         ) : null}
       </Animated.View>
+
+      <PressableScale
+        scaleTo={0.98}
+        onPress={onPressCustomer}
+        accessibilityRole="button"
+        accessibilityLabel={customerName ? `Customer: ${customerName}` : 'Attach a customer'}
+        className="mb-4 h-12 flex-row items-center gap-3 rounded-md border border-hairline bg-surface px-4 dark:bg-surface-elevated"
+      >
+        <UserRound size={18} color={customerName ? colors.primary : colors.inkTertiary} strokeWidth={2} />
+        <Text variant="body" weight={customerName ? 'medium' : 'regular'} tone={customerName ? 'primary' : 'tertiary'} className="flex-1">
+          {customerName ?? 'Walk-in · attach a customer'}
+        </Text>
+        <ChevronRight size={16} color={colors.inkTertiary} strokeWidth={2} />
+      </PressableScale>
 
       <View className="flex-row gap-2.5">
         {METHODS.map((meta) => {

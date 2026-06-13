@@ -7,11 +7,14 @@ import { persistStorage } from '@/lib/storage';
 interface CartState {
   lines: CartLine[];
   discount: CartDiscount;
+  customerId: string | null;
+  customerName: string | null;
   /** Add (or bump) a line; qty is clamped to available stock. Returns false when out of stock. */
   addLine: (line: Omit<CartLine, 'qty'>, qty?: number) => boolean;
   setQty: (variantId: string, qty: number) => void;
   removeLine: (variantId: string) => void;
   setDiscount: (discount: CartDiscount) => void;
+  setCustomer: (customer: { id: string; name: string } | null) => void;
   clear: () => void;
 }
 
@@ -24,6 +27,8 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       lines: [],
       discount: null,
+      customerId: null,
+      customerName: null,
 
       addLine: (line, qty = 1) => {
         const existing = get().lines.find((l) => l.variantId === line.variantId);
@@ -56,7 +61,10 @@ export const useCartStore = create<CartState>()(
 
       setDiscount: (discount) => set({ discount }),
 
-      clear: () => set({ lines: [], discount: null }),
+      setCustomer: (customer) =>
+        set({ customerId: customer?.id ?? null, customerName: customer?.name ?? null }),
+
+      clear: () => set({ lines: [], discount: null, customerId: null, customerName: null }),
     }),
     {
       name: 'counter.cart',
