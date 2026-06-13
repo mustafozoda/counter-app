@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  Bell,
   CalendarClock,
   PackageSearch,
   Trophy,
@@ -13,6 +14,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
   Card,
   CurrencyText,
+  IconButton,
   Logo,
   Screen,
   SegmentedControl,
@@ -86,7 +88,14 @@ export default function HomeScreen() {
             {store?.name ?? 'Your store'}
           </Text>
         </View>
-        <Logo size={44} letter={(store?.name.trim()[0] ?? 'C').toUpperCase()} />
+        <View className="flex-row items-center gap-2">
+          <IconButton
+            icon={Bell}
+            accessibilityLabel="Notifications"
+            onPress={() => router.push('/notifications')}
+          />
+          <Logo size={44} letter={(store?.name.trim()[0] ?? 'C').toUpperCase()} />
+        </View>
       </Animated.View>
 
       <Animated.View entering={enter(1)} className="mt-6">

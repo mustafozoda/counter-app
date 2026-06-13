@@ -42,6 +42,9 @@ export interface User {
   role: StaffRole;
 }
 
+/** A user in their staff-management capacity (same shape; clearer intent). */
+export type StaffMember = User;
+
 // ---------------------------------------------------------------------------
 // Catalog
 // ---------------------------------------------------------------------------

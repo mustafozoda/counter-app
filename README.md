@@ -73,4 +73,11 @@ offline-first POS phase.
 - [x] **Phase 5** — customer financing / installments (flagship)
 - [x] **Phase 6** — suppliers/PO, promotions, analytics
 - [x] **Phase 7** — online storefront
-- [ ] **Phase 8** — settings, staff/roles, notifications, i18n, sync hardening
+- [x] **Phase 8** — settings, staff/roles, notifications, i18n, polish
+
+All eight roadmap phases are implemented against the local-first data layer.
+What remains for production is connecting the API seams (`src/api/*`) to a
+real backend (Supabase) plus the offline **sync engine** — the seams were
+designed so this is a drop-in swap with no UI changes. Full per-screen i18n
+string extraction is incremental: the infrastructure (i18next, 4 languages
+incl. RTL Arabic, device detection) is in place and used by Settings.

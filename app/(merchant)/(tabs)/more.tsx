@@ -38,7 +38,7 @@ const MENU: MenuEntry[] = [
   { icon: Truck, label: 'Suppliers', description: 'Purchase orders & restocks', phase: 'Phase 6', href: '/suppliers' },
   { icon: Tag, label: 'Promotions', description: 'Coupons & discounts', phase: 'Phase 6', href: '/promotions' },
   { icon: BarChart3, label: 'Reports', description: 'Best sellers, trends, exports', phase: 'Phase 6', href: '/reports' },
-  { icon: Settings, label: 'Settings', description: 'Store, staff, receipts', phase: 'Phase 8' },
+  { icon: Settings, label: 'Settings', description: 'Store, staff, receipts', phase: 'Phase 8', href: '/settings' },
 ];
 
 const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
