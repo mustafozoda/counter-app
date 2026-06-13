@@ -83,6 +83,7 @@ export default function RootLayout() {
               </Stack.Protected>
               <Stack.Protected guard={signedIn && onboarded}>
                 <Stack.Screen name="(merchant)" />
+                <Stack.Screen name="(storefront)" />
               </Stack.Protected>
             </Stack>
             <ToastHost />
