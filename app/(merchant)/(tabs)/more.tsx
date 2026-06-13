@@ -34,9 +34,9 @@ const MENU: MenuEntry[] = [
   { icon: Users, label: 'Customers', description: 'Profiles, history, loyalty', phase: 'Phase 3', href: '/customers' },
   { icon: Wallet, label: 'Finance', description: 'Revenue, expenses, profit', phase: 'Phase 4', href: '/finance' },
   { icon: HandCoins, label: 'Financing', description: 'Installments & layaway', phase: 'Phase 5', href: '/financing' },
-  { icon: Truck, label: 'Suppliers', description: 'Purchase orders & restocks', phase: 'Phase 6' },
-  { icon: Tag, label: 'Promotions', description: 'Coupons & discounts', phase: 'Phase 6' },
-  { icon: BarChart3, label: 'Reports', description: 'Best sellers, trends, exports', phase: 'Phase 6' },
+  { icon: Truck, label: 'Suppliers', description: 'Purchase orders & restocks', phase: 'Phase 6', href: '/suppliers' },
+  { icon: Tag, label: 'Promotions', description: 'Coupons & discounts', phase: 'Phase 6', href: '/promotions' },
+  { icon: BarChart3, label: 'Reports', description: 'Best sellers, trends, exports', phase: 'Phase 6', href: '/reports' },
   { icon: Settings, label: 'Settings', description: 'Store, staff, receipts', phase: 'Phase 8' },
 ];
 

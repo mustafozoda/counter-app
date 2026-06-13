@@ -71,6 +71,6 @@ offline-first POS phase.
 - [x] **Phase 3** — orders & customers (CRM)
 - [x] **Phase 4** — dashboard + finance/bookkeeping
 - [x] **Phase 5** — customer financing / installments (flagship)
-- [ ] **Phase 6** — suppliers/PO, promotions, analytics
+- [x] **Phase 6** — suppliers/PO, promotions, analytics
 - [ ] **Phase 7** — online storefront
 - [ ] **Phase 8** — settings, staff/roles, notifications, i18n, sync hardening
