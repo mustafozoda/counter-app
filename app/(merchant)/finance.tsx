@@ -9,6 +9,7 @@ import {
   Wallet,
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -32,9 +33,8 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
-import { PERIOD_OPTIONS, summarize, type FinancePeriod } from '@/features/finance/aggregate';
+import { summarize, type FinancePeriod } from '@/features/finance/aggregate';
 import {
-  categoryLabel,
   EXPENSE_CATEGORIES,
   useAddExpense,
   useTransactions,
@@ -51,8 +51,15 @@ import type { Transaction } from '@/types/models';
 
 export default function FinanceScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
+
+  const periodOptions: { label: string; value: FinancePeriod }[] = [
+    { label: t('home.today'), value: 'today' },
+    { label: t('home.week'), value: 'week' },
+    { label: t('home.month'), value: 'month' },
+  ];
 
   const transactionsQuery = useTransactions();
   const ordersQuery = useOrders();
@@ -84,14 +91,14 @@ export default function FinanceScreen() {
   const submitExpense = () => {
     const parsed = Number.parseFloat(amount.replace(',', '.'));
     if (!Number.isFinite(parsed) || parsed <= 0) {
-      toast.error('Enter an amount');
+      toast.error(t('finance.enterAmount'));
       return;
     }
     addExpense.mutate(
       { category, amount: parsed, note: note.trim(), receiptUri },
       {
         onSuccess: () => {
-          toast.success('Expense recorded', `${categoryLabel(category)} · ${formatMoney(parsed, currency)}`);
+          toast.success(t('finance.expenseRecorded'), `${t('category.' + category)} · ${formatMoney(parsed, currency)}`);
           setAmount('');
           setNote('');
           setReceiptUri(null);
@@ -104,16 +111,16 @@ export default function FinanceScreen() {
   const exportLedger = async () => {
     try {
       const rows: (string | number | null)[][] = [['Date', 'Type', 'Category', 'Amount', 'Note']];
-      for (const t of transactions) {
-        rows.push([formatDateTime(new Date(t.date)), t.type, categoryLabel(t.category), t.amount, t.note]);
+      for (const txn of transactions) {
+        rows.push([formatDateTime(new Date(txn.date)), txn.type, t('category.' + txn.category), txn.amount, txn.note]);
       }
       const file = new File(Paths.cache, `counter-ledger-${Date.now()}.csv`);
       file.write(toCsv(rows));
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'Export ledger' });
+        await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: t('finance.exportLedger') });
       }
     } catch {
-      toast.error('Export failed');
+      toast.error(t('finance.exportFailed'));
     }
   };
 
@@ -121,17 +128,17 @@ export default function FinanceScreen() {
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
         <View className="flex-row items-center gap-3">
-          <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+          <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
           <Text variant="h1" weight="bold">
-            Finance
+            {t('finance.title')}
           </Text>
         </View>
         <View className="flex-row gap-2">
-          <IconButton icon={Share2} accessibilityLabel="Export ledger CSV" onPress={() => void exportLedger()} />
+          <IconButton icon={Share2} accessibilityLabel={t('finance.exportLedger')} onPress={() => void exportLedger()} />
           <IconButton
             icon={Plus}
             variant="tonal"
-            accessibilityLabel="Add expense"
+            accessibilityLabel={t('finance.addExpense')}
             onPress={() => expenseSheet.current?.present()}
           />
         </View>
@@ -139,7 +146,7 @@ export default function FinanceScreen() {
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-16" showsVerticalScrollIndicator={false}>
         <View className="pt-3">
-          <SegmentedControl options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
+          <SegmentedControl options={periodOptions} value={period} onChange={setPeriod} />
         </View>
 
         {loading ? (
@@ -153,7 +160,7 @@ export default function FinanceScreen() {
             <Animated.View entering={FadeInDown.springify().damping(18)} className="mt-4">
               <Card className="gap-1">
                 <Text variant="caption" weight="medium" tone="secondary">
-                  Profit ({period})
+                  {t('finance.profit', { period: t('home.' + period) })}
                 </Text>
                 <CurrencyText
                   amount={summary.profit}
@@ -163,14 +170,14 @@ export default function FinanceScreen() {
                   tone={summary.profit >= 0 ? 'positive' : 'negative'}
                 />
                 <Text variant="caption" tone="tertiary">
-                  Cash basis: money in minus money out
+                  {t('finance.profitCaption')}
                 </Text>
               </Card>
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(40).springify().damping(18)} className="mt-3 flex-row gap-3">
               <StatCard
-                label="Revenue"
+                label={t('finance.revenue')}
                 value={summary.revenue}
                 currency={currency}
                 delta={summary.revenueDelta ?? undefined}
@@ -180,7 +187,7 @@ export default function FinanceScreen() {
               <Card className="flex-1 gap-2">
                 <View className="flex-row items-center justify-between">
                   <Text variant="caption" weight="medium" tone="secondary">
-                    Expenses
+                    {t('finance.expenses')}
                   </Text>
                   <View className="h-8 w-8 items-center justify-center rounded-full bg-negative-tint">
                     <ArrowUpRight size={16} color={colors.negative} strokeWidth={2} />
@@ -188,8 +195,7 @@ export default function FinanceScreen() {
                 </View>
                 <CurrencyText amount={summary.expenses} currency={currency} variant="displaySm" animated />
                 <Text variant="micro" tone="tertiary">
-                  {summary.expenseByCategory.length} categor
-                  {summary.expenseByCategory.length === 1 ? 'y' : 'ies'}
+                  {t('finance.categoriesCount', { count: summary.expenseByCategory.length })}
                 </Text>
               </Card>
             </Animated.View>
@@ -198,19 +204,19 @@ export default function FinanceScreen() {
               <Card className="gap-3">
                 <View className="flex-row items-center justify-between">
                   <Text variant="caption" weight="medium" tone="secondary">
-                    Cash flow
+                    {t('finance.cashFlow')}
                   </Text>
                   <View className="flex-row items-center gap-3">
                     <View className="flex-row items-center gap-1">
                       <View className="h-2 w-2 rounded-full" style={{ backgroundColor: colors.positive }} />
                       <Text variant="micro" tone="tertiary">
-                        In
+                        {t('finance.in')}
                       </Text>
                     </View>
                     <View className="flex-row items-center gap-1">
                       <View className="h-2 w-2 rounded-full" style={{ backgroundColor: colors.negative }} />
                       <Text variant="micro" tone="tertiary">
-                        Out
+                        {t('finance.out')}
                       </Text>
                     </View>
                   </View>
@@ -237,13 +243,13 @@ export default function FinanceScreen() {
               <Animated.View entering={FadeInDown.delay(120).springify().damping(18)} className="mt-3">
                 <Card className="gap-3">
                   <Text variant="caption" weight="medium" tone="secondary">
-                    Where money went
+                    {t('finance.whereMoneyWent')}
                   </Text>
                   {summary.expenseByCategory.slice(0, 5).map((entry) => (
                     <View key={entry.category} className="gap-1.5">
                       <View className="flex-row items-center justify-between">
                         <Text variant="caption" weight="medium">
-                          {categoryLabel(entry.category)}
+                          {t('category.' + entry.category)}
                         </Text>
                         <Text variant="caption" tone="secondary" tabular>
                           {formatMoney(entry.amount, currency)}
@@ -262,14 +268,14 @@ export default function FinanceScreen() {
 
             <Animated.View entering={FadeInDown.delay(160).springify().damping(18)} className="mt-6 gap-3">
               <Text variant="h2" weight="semibold">
-                Ledger
+                {t('finance.ledger')}
               </Text>
               {ledger.length === 0 ? (
                 <EmptyState
                   icon={Wallet}
-                  title="No transactions yet"
-                  message="Sales flow in automatically — record expenses to see real profit."
-                  actionLabel="Add an expense"
+                  title={t('finance.noTransactions')}
+                  message={t('finance.noTransactionsBody')}
+                  actionLabel={t('finance.addExpenseCta')}
                   onAction={() => expenseSheet.current?.present()}
                 />
               ) : (
@@ -284,23 +290,23 @@ export default function FinanceScreen() {
         )}
       </ScrollView>
 
-      <Sheet ref={expenseSheet} title="Add expense">
+      <Sheet ref={expenseSheet} title={t('finance.addExpense')}>
         <View className="gap-4">
           <View className="flex-row flex-wrap gap-2">
             {EXPENSE_CATEGORIES.map((c) => (
-              <Chip key={c} label={categoryLabel(c)} selected={category === c} onPress={() => setCategory(c)} />
+              <Chip key={c} label={t('category.' + c)} selected={category === c} onPress={() => setCategory(c)} />
             ))}
           </View>
           <TextField
-            label="Amount"
+            label={t('finance.amount')}
             value={amount}
             onChangeText={(v) => setAmount(v.replace(',', '.'))}
             keyboardType="decimal-pad"
           />
-          <TextField label="Note (optional)" value={note} onChangeText={setNote} />
+          <TextField label={t('finance.noteOptional')} value={note} onChangeText={setNote} />
           <View className="flex-row items-center gap-3">
             <Button
-              label={receiptUri ? 'Change receipt photo' : 'Attach receipt photo'}
+              label={receiptUri ? t('finance.changeReceipt') : t('finance.attachReceipt')}
               variant="secondary"
               icon={ReceiptText}
               onPress={() => void pickReceipt()}
@@ -310,7 +316,7 @@ export default function FinanceScreen() {
             ) : null}
           </View>
           <Button
-            label="Record expense"
+            label={t('finance.recordExpense')}
             size="lg"
             fullWidth
             loading={addExpense.isPending}
@@ -331,6 +337,7 @@ function LedgerRow({
   currency: string;
   last: boolean;
 }) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const income = transaction.type === 'income';
   return (
@@ -347,7 +354,7 @@ function LedgerRow({
       </View>
       <View className="flex-1">
         <Text variant="body" weight="medium">
-          {categoryLabel(transaction.category)}
+          {t('category.' + transaction.category)}
         </Text>
         <Text variant="caption" tone="tertiary" numberOfLines={1}>
           {transaction.note ? `${transaction.note} · ` : ''}

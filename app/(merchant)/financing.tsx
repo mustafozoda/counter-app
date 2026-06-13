@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, CalendarClock, ChevronRight } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -26,25 +27,27 @@ import type { FinancingPlanStatus } from '@/types/models';
 
 type Filter = 'active' | 'completed' | 'all';
 
-const FILTER_OPTIONS: { label: string; value: Filter }[] = [
-  { label: 'Active', value: 'active' },
-  { label: 'Completed', value: 'completed' },
-  { label: 'All', value: 'all' },
-];
+const FILTER_VALUES: Filter[] = ['active', 'completed', 'all'];
 
-const STATUS_BADGE: Record<FinancingPlanStatus, { label: string; tone: 'positive' | 'caution' | 'negative' | 'neutral' }> = {
-  active: { label: 'Active', tone: 'positive' },
-  completed: { label: 'Completed', tone: 'neutral' },
-  defaulted: { label: 'Defaulted', tone: 'negative' },
-  cancelled: { label: 'Cancelled', tone: 'neutral' },
+const STATUS_BADGE: Record<FinancingPlanStatus, { labelKey: string; tone: 'positive' | 'caution' | 'negative' | 'neutral' }> = {
+  active: { labelKey: 'financing.statusActive', tone: 'positive' },
+  completed: { labelKey: 'financing.statusCompleted', tone: 'neutral' },
+  defaulted: { labelKey: 'financing.statusDefaulted', tone: 'negative' },
+  cancelled: { labelKey: 'financing.statusCancelled', tone: 'neutral' },
 };
 
 export default function FinancingScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const plansQuery = usePlans();
   const customers = useCustomers().data ?? [];
   const [filter, setFilter] = useState<Filter>('active');
+
+  const filterOptions = FILTER_VALUES.map((value) => ({
+    label: t(`financing.${value}`),
+    value,
+  }));
 
   const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
   const summary = useMemo(() => summarizeFinancing(plans), [plans]);
@@ -53,14 +56,14 @@ export default function FinancingScreen() {
     [plans, filter],
   );
 
-  const customerName = (id: string) => customers.find((c) => c.id === id)?.name ?? 'Customer';
+  const customerName = (id: string) => customers.find((c) => c.id === id)?.name ?? t('common.customer');
 
   return (
     <Screen padded={false}>
       <View className="flex-row items-center gap-3 px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <Text variant="h1" weight="bold">
-          Financing
+          {t('financing.title')}
         </Text>
       </View>
 
@@ -76,37 +79,39 @@ export default function FinancingScreen() {
             <Animated.View entering={FadeInDown.springify().damping(18)} className="mt-3">
               <Card className="gap-1">
                 <Text variant="caption" weight="medium" tone="secondary">
-                  Outstanding across {summary.activePlans} active plan
-                  {summary.activePlans === 1 ? '' : 's'}
+                  {t('financing.outstanding', { count: summary.activePlans })}
                 </Text>
                 <CurrencyText amount={summary.outstandingTotal} currency={currency} variant="display" animated />
                 <View className="mt-1 flex-row gap-2">
                   {summary.dueSoonCount > 0 ? (
                     <Badge
-                      label={`${summary.dueSoonCount} due soon · ${formatMoney(summary.dueSoonAmount, currency)}`}
+                      label={t('financing.dueSoon', {
+                        count: summary.dueSoonCount,
+                        amount: formatMoney(summary.dueSoonAmount, currency),
+                      })}
                       tone="caution"
                       dot
                     />
                   ) : null}
                   {summary.overdueCount > 0 ? (
-                    <Badge label={`${summary.overdueCount} overdue`} tone="negative" dot />
+                    <Badge label={t('financing.overdue', { count: summary.overdueCount })} tone="negative" dot />
                   ) : null}
                   {summary.dueSoonCount === 0 && summary.overdueCount === 0 ? (
-                    <Badge label="All on schedule" tone="positive" dot />
+                    <Badge label={t('financing.allOnSchedule')} tone="positive" dot />
                   ) : null}
                 </View>
               </Card>
             </Animated.View>
 
             <View className="mt-4">
-              <SegmentedControl options={FILTER_OPTIONS} value={filter} onChange={setFilter} />
+              <SegmentedControl options={filterOptions} value={filter} onChange={setFilter} />
             </View>
 
             {visible.length === 0 ? (
               <EmptyState
                 icon={CalendarClock}
-                title={filter === 'active' ? 'No active plans' : 'Nothing here'}
-                message="Offer “pay over time” at checkout — pick Installment as the payment method."
+                title={filter === 'active' ? t('financing.noActive') : t('financing.nothingHere')}
+                message={t('financing.emptyMsg')}
                 className="mt-6"
               />
             ) : (
@@ -133,14 +138,17 @@ export default function FinancingScreen() {
                               {customerName(plan.customerId)}
                             </Text>
                             <Text variant="caption" tone="tertiary" tabular>
-                              {formatMoney(plan.principal, currency)} · {progress.paidCount}/
-                              {progress.totalCount} paid
+                              {formatMoney(plan.principal, currency)} ·{' '}
+                              {t('financing.paidCount', {
+                                paid: progress.paidCount,
+                                total: progress.totalCount,
+                              })}
                             </Text>
                           </View>
                           {progress.overdueCount > 0 && plan.status === 'active' ? (
-                            <Badge label="Overdue" tone="negative" dot />
+                            <Badge label={t('financing.overdueBadge')} tone="negative" dot />
                           ) : (
-                            <Badge label={badge.label} tone={badge.tone} />
+                            <Badge label={t(badge.labelKey)} tone={badge.tone} />
                           )}
                           <ChevronRight size={16} color="#9C9AA3" strokeWidth={2} />
                         </View>
@@ -150,8 +158,10 @@ export default function FinancingScreen() {
                         />
                         {plan.status === 'active' && progress.nextDue ? (
                           <Text variant="caption" tone="secondary" tabular>
-                            Next: {formatMoney(progress.nextDue.amount, currency)} ·{' '}
-                            {formatDayLabel(new Date(progress.nextDue.dueDate))}
+                            {t('financing.next', {
+                              amount: formatMoney(progress.nextDue.amount, currency),
+                              date: formatDayLabel(new Date(progress.nextDue.dueDate)),
+                            })}
                           </Text>
                         ) : null}
                       </Card>
