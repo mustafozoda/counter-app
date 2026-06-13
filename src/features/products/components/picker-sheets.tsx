@@ -1,5 +1,6 @@
 import { Check, FolderOpen } from 'lucide-react-native';
 import { forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { PressableScale, Sheet, Text, type SheetRef } from '@/components/ui';
@@ -7,6 +8,15 @@ import { useTheme } from '@/theme';
 import type { Category, Id } from '@/types/models';
 
 import { SORT_OPTIONS, type ProductSort } from '../filtering';
+
+/** Sort value → translation key (mirrors the catalog screen). */
+const SORT_KEY: Record<ProductSort, string> = {
+  newest: 'products.sortNewest',
+  name: 'products.sortName',
+  'price-asc': 'products.sortPriceAsc',
+  'price-desc': 'products.sortPriceDesc',
+  'stock-asc': 'products.sortStock',
+};
 
 interface SheetOptionRowProps {
   label: string;
@@ -47,6 +57,7 @@ export interface CategorySheetProps {
 export const CategoryPickerSheet = forwardRef<SheetRef, CategorySheetProps>(
   function CategoryPickerSheet({ categories, selected, onSelect, nullLabel, dismiss }, ref) {
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const roots = categories.filter((c) => c.parentId === null);
     const childrenOf = (id: Id) => categories.filter((c) => c.parentId === id);
 
@@ -56,7 +67,7 @@ export const CategoryPickerSheet = forwardRef<SheetRef, CategorySheetProps>(
     };
 
     return (
-      <Sheet ref={ref} title="Category">
+      <Sheet ref={ref} title={t('products.category')}>
         <View className="gap-0.5">
           <SheetOptionRow label={nullLabel} selected={selected === null} onPress={() => choose(null)} />
           {roots.length === 0 ? (
@@ -101,13 +112,14 @@ export const SortSheet = forwardRef<SheetRef, SortSheetProps>(function SortSheet
   { selected, onSelect, dismiss },
   ref,
 ) {
+  const { t } = useTranslation();
   return (
-    <Sheet ref={ref} title="Sort by">
+    <Sheet ref={ref} title={t('products.sortBy')}>
       <View className="gap-0.5">
         {SORT_OPTIONS.map((option) => (
           <SheetOptionRow
             key={option.value}
-            label={option.label}
+            label={t(SORT_KEY[option.value])}
             selected={selected === option.value}
             onPress={() => {
               onSelect(option.value);

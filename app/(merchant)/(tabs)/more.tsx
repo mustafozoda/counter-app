@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Alert, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -24,42 +25,43 @@ import { STAGGER_MS, useTheme } from '@/theme';
 
 interface MenuEntry {
   icon: LucideIcon;
-  label: string;
-  description: string;
+  /** translation keys under `more.*` */
+  labelKey: string;
+  descKey: string;
   phase: string;
   /** Route when the module is live; absent = coming-soon toast. */
   href?: string;
 }
 
 const MENU: MenuEntry[] = [
-  { icon: Users, label: 'Customers', description: 'Profiles, history, loyalty', phase: 'Phase 3', href: '/customers' },
-  { icon: Wallet, label: 'Finance', description: 'Revenue, expenses, profit', phase: 'Phase 4', href: '/finance' },
-  { icon: HandCoins, label: 'Financing', description: 'Installments & layaway', phase: 'Phase 5', href: '/financing' },
-  { icon: Truck, label: 'Suppliers', description: 'Purchase orders & restocks', phase: 'Phase 6', href: '/suppliers' },
-  { icon: Tag, label: 'Promotions', description: 'Coupons & discounts', phase: 'Phase 6', href: '/promotions' },
-  { icon: BarChart3, label: 'Reports', description: 'Best sellers, trends, exports', phase: 'Phase 6', href: '/reports' },
-  { icon: Settings, label: 'Settings', description: 'Store, staff, receipts', phase: 'Phase 8', href: '/settings' },
+  { icon: Users, labelKey: 'more.customers', descKey: 'more.customersDesc', phase: 'Phase 3', href: '/customers' },
+  { icon: Wallet, labelKey: 'more.finance', descKey: 'more.financeDesc', phase: 'Phase 4', href: '/finance' },
+  { icon: HandCoins, labelKey: 'more.financing', descKey: 'more.financingDesc', phase: 'Phase 5', href: '/financing' },
+  { icon: Truck, labelKey: 'more.suppliers', descKey: 'more.suppliersDesc', phase: 'Phase 6', href: '/suppliers' },
+  { icon: Tag, labelKey: 'more.promotions', descKey: 'more.promotionsDesc', phase: 'Phase 6', href: '/promotions' },
+  { icon: BarChart3, labelKey: 'more.reports', descKey: 'more.reportsDesc', phase: 'Phase 6', href: '/reports' },
+  { icon: Settings, labelKey: 'more.settings', descKey: 'more.settingsDesc', phase: 'Phase 8', href: '/settings' },
 ];
 
-const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
-  { label: 'System', value: 'system' },
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-];
+const THEME_VALUES: ThemeMode[] = ['system', 'light', 'dark'];
 
 export default function MoreScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const store = useStoreProfile((s) => s.store);
   const themeMode = usePreferences((s) => s.themeMode);
   const setThemeMode = usePreferences((s) => s.setThemeMode);
 
+  const themeOptions = THEME_VALUES.map((value) => ({ value, label: t(`more.${value}`) }));
+  const roleLabel = t(`roles.${user?.role ?? 'cashier'}`);
+
   const confirmSignOut = () => {
-    Alert.alert('Sign out', 'You can sign back in anytime.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+    Alert.alert(t('more.signOut'), t('more.signOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('more.signOut'), style: 'destructive', onPress: signOut },
     ]);
   };
 
@@ -67,7 +69,7 @@ export default function MoreScreen() {
     <Screen scroll tabbed>
       <View className="mt-2">
         <Text variant="h1" weight="bold">
-          More
+          {t('more.title')}
         </Text>
       </View>
 
@@ -76,7 +78,7 @@ export default function MoreScreen() {
           <Logo size={52} letter={(store?.name.trim()[0] ?? 'C').toUpperCase()} />
           <View className="flex-1">
             <Text variant="title" weight="semibold">
-              {store?.name ?? 'Your store'}
+              {store?.name ?? t('home.yourStore')}
             </Text>
             <Text variant="caption" tone="secondary">
               {user?.email}
@@ -84,7 +86,7 @@ export default function MoreScreen() {
           </View>
           <View className="rounded-full bg-primary-tint px-3 py-1">
             <Text variant="micro" weight="semibold" tone="accent">
-              {user?.role === 'owner' ? 'Owner' : user?.role === 'manager' ? 'Manager' : 'Cashier'}
+              {roleLabel}
             </Text>
           </View>
         </Card>
@@ -92,23 +94,27 @@ export default function MoreScreen() {
 
       <Animated.View entering={FadeInDown.delay(STAGGER_MS).springify().damping(18)} className="mt-5 gap-2">
         <Text variant="caption" weight="medium" tone="tertiary" className="px-1">
-          APPEARANCE
+          {t('more.appearance')}
         </Text>
-        <SegmentedControl options={THEME_OPTIONS} value={themeMode} onChange={setThemeMode} />
+        <SegmentedControl options={themeOptions} value={themeMode} onChange={setThemeMode} />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(STAGGER_MS * 2).springify().damping(18)} className="mt-6 gap-2">
         <Text variant="caption" weight="medium" tone="tertiary" className="px-1">
-          MANAGE
+          {t('more.manage')}
         </Text>
         <Card padded={false} className="overflow-hidden">
           {MENU.map((entry, index) => (
             <PressableScale
-              key={entry.label}
+              key={entry.labelKey}
               scaleTo={0.99}
               onPress={() => {
                 if (entry.href) router.push(entry.href as Parameters<typeof router.push>[0]);
-                else toast.info(`${entry.label} is on the way`, `Arrives with ${entry.phase}.`);
+                else
+                  toast.info(
+                    t('more.comingSoon', { feature: t(entry.labelKey) }),
+                    t('more.comingSoonBody', { phase: entry.phase }),
+                  );
               }}
               accessibilityRole="button"
               className={
@@ -122,10 +128,10 @@ export default function MoreScreen() {
               </View>
               <View className="flex-1">
                 <Text variant="body" weight="medium">
-                  {entry.label}
+                  {t(entry.labelKey)}
                 </Text>
                 <Text variant="caption" tone="tertiary">
-                  {entry.description}
+                  {t(entry.descKey)}
                 </Text>
               </View>
               <ChevronRight size={18} color={colors.inkTertiary} strokeWidth={2} />
@@ -145,10 +151,10 @@ export default function MoreScreen() {
           </View>
           <View className="flex-1">
             <Text variant="body" weight="medium">
-              Preview storefront
+              {t('more.previewStorefront')}
             </Text>
             <Text variant="caption" tone="tertiary">
-              See your shop the way customers do
+              {t('more.previewStorefrontDesc')}
             </Text>
           </View>
           <ChevronRight size={18} color={colors.inkTertiary} strokeWidth={2} />
@@ -163,7 +169,7 @@ export default function MoreScreen() {
         >
           <LogOut size={18} color={colors.negative} strokeWidth={2} />
           <Text variant="body" weight="semibold" tone="negative">
-            Sign out
+            {t('more.signOut')}
           </Text>
         </PressableScale>
         <Text variant="micro" tone="tertiary" className="mt-4 text-center">

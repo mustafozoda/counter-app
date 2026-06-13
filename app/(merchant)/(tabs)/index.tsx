@@ -8,6 +8,7 @@ import {
   Trophy,
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -23,7 +24,7 @@ import {
   StatCard,
   Text,
 } from '@/components/ui';
-import { PERIOD_OPTIONS, summarize, type FinancePeriod } from '@/features/finance/aggregate';
+import { summarize, type FinancePeriod } from '@/features/finance/aggregate';
 import { useTransactions } from '@/features/finance/hooks';
 import { usePlans } from '@/features/financing/hooks';
 import { summarizeFinancing } from '@/features/financing/schedule';
@@ -35,25 +36,32 @@ import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import { STAGGER_MS, useTheme } from '@/theme';
 
-function greeting(): string {
+function greetingKey(): string {
   const hour = new Date().getHours();
-  if (hour < 5) return 'Burning the midnight oil';
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 5) return 'home.greetingNight';
+  if (hour < 12) return 'home.greetingMorning';
+  if (hour < 18) return 'home.greetingAfternoon';
+  return 'home.greetingEvening';
 }
 
-const PERIOD_LABEL: Record<FinancePeriod, string> = {
-  today: "Today's sales",
-  week: 'Sales this week',
-  month: 'Sales this month',
+const PERIOD_LABEL_KEY: Record<FinancePeriod, string> = {
+  today: 'home.salesToday',
+  week: 'home.salesWeek',
+  month: 'home.salesMonth',
 };
 
 export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const store = useStoreProfile((s) => s.store);
   const [period, setPeriod] = useState<FinancePeriod>('today');
+
+  const periodOptions: { label: string; value: FinancePeriod }[] = [
+    { label: t('home.today'), value: 'today' },
+    { label: t('home.week'), value: 'week' },
+    { label: t('home.month'), value: 'month' },
+  ];
 
   const productsQuery = useProducts();
   const ordersQuery = useOrders();
@@ -82,16 +90,16 @@ export default function HomeScreen() {
       <Animated.View entering={enter(0)} className="mt-2 flex-row items-center justify-between">
         <View>
           <Text variant="caption" tone="secondary">
-            {greeting()}
+            {t(greetingKey())}
           </Text>
           <Text variant="h1" weight="bold" className="mt-0.5">
-            {store?.name ?? 'Your store'}
+            {store?.name ?? t('home.yourStore')}
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
           <IconButton
             icon={Bell}
-            accessibilityLabel="Notifications"
+            accessibilityLabel={t('more.title')}
             onPress={() => router.push('/notifications')}
           />
           <Logo size={44} letter={(store?.name.trim()[0] ?? 'C').toUpperCase()} />
@@ -99,7 +107,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       <Animated.View entering={enter(1)} className="mt-6">
-        <SegmentedControl options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
+        <SegmentedControl options={periodOptions} value={period} onChange={setPeriod} />
       </Animated.View>
 
       {loading ? (
@@ -114,7 +122,7 @@ export default function HomeScreen() {
         <>
           <Animated.View entering={enter(2)} className="mt-5">
             <StatCard
-              label={PERIOD_LABEL[period]}
+              label={t(PERIOD_LABEL_KEY[period])}
               value={summary.revenue}
               currency={currency}
               delta={summary.revenueDelta ?? undefined}
@@ -125,7 +133,7 @@ export default function HomeScreen() {
 
           <Animated.View entering={enter(3)} className="mt-3 flex-row gap-3">
             <StatCard
-              label="Orders"
+              label={t('home.orders')}
               value={summary.ordersCount}
               delta={summary.ordersDelta ?? undefined}
               className="flex-1"
@@ -134,7 +142,7 @@ export default function HomeScreen() {
             <Card className="flex-1 justify-between gap-2" onPress={() => router.push('/low-stock')}>
               <View className="flex-row items-center justify-between">
                 <Text variant="caption" weight="medium" tone="secondary">
-                  Low stock
+                  {t('home.lowStock')}
                 </Text>
                 <View className="h-8 w-8 items-center justify-center rounded-full bg-caution-tint">
                   <PackageSearch size={16} color={colors.caution} strokeWidth={2} />
@@ -144,7 +152,7 @@ export default function HomeScreen() {
                 {formatCompact(lowStockCount)}
               </Text>
               <Text variant="micro" tone="tertiary">
-                {lowStockCount === 0 ? 'all stocked up' : 'items need a restock'}
+                {lowStockCount === 0 ? t('home.allStockedUp') : t('home.needRestock')}
               </Text>
             </Card>
           </Animated.View>
@@ -153,7 +161,7 @@ export default function HomeScreen() {
             <Card onPress={() => router.push('/finance')} className="gap-4">
               <View className="flex-row items-center justify-between">
                 <Text variant="caption" weight="medium" tone="secondary">
-                  Cash flow
+                  {t('home.cashFlow')}
                 </Text>
                 <Sparkline data={summary.revenueTrend} width={104} height={30} tone="primary" />
               </View>
@@ -162,7 +170,7 @@ export default function HomeScreen() {
                   <View className="flex-row items-center gap-1.5">
                     <ArrowDownLeft size={14} color={colors.positive} strokeWidth={2.5} />
                     <Text variant="micro" weight="medium" tone="tertiary">
-                      MONEY IN
+                      {t('home.moneyIn')}
                     </Text>
                   </View>
                   <CurrencyText amount={summary.moneyIn} currency={currency} variant="h2" tone="positive" animated />
@@ -172,7 +180,7 @@ export default function HomeScreen() {
                   <View className="flex-row items-center gap-1.5">
                     <ArrowUpRight size={14} color={colors.negative} strokeWidth={2.5} />
                     <Text variant="micro" weight="medium" tone="tertiary">
-                      MONEY OUT
+                      {t('home.moneyOut')}
                     </Text>
                   </View>
                   <CurrencyText amount={summary.moneyOut} currency={currency} variant="h2" tone="negative" animated />
@@ -195,7 +203,7 @@ export default function HomeScreen() {
                 />
               </View>
               <Text variant="caption" weight="medium" tone="secondary">
-                Installments due
+                {t('home.installmentsDue')}
               </Text>
               {financing.dueSoonCount > 0 ? (
                 <View className="flex-row items-baseline gap-2">
@@ -211,16 +219,24 @@ export default function HomeScreen() {
                 </View>
               ) : (
                 <Text variant="caption" tone="tertiary">
-                  {financing.activePlans > 0 ? 'All on schedule' : 'No active plans'}
+                  {financing.activePlans > 0 ? t('home.allOnSchedule') : t('home.noActivePlans')}
                 </Text>
               )}
             </Card>
-            <Card className="flex-1 gap-2" onPress={() => toast.info('Analytics is on the way', 'Arrives with Phase 6.')}>
+            <Card
+              className="flex-1 gap-2"
+              onPress={() =>
+                toast.info(
+                  t('more.comingSoon', { feature: t('more.reports') }),
+                  t('more.comingSoonBody', { phase: 'Phase 6' }),
+                )
+              }
+            >
               <View className="h-8 w-8 items-center justify-center rounded-full bg-positive-tint">
                 <Trophy size={16} color={colors.positive} strokeWidth={2} />
               </View>
               <Text variant="caption" weight="medium" tone="secondary">
-                Best seller
+                {t('home.bestSeller')}
               </Text>
               {summary.bestSeller ? (
                 <>
@@ -228,12 +244,12 @@ export default function HomeScreen() {
                     {summary.bestSeller.name}
                   </Text>
                   <Text variant="micro" tone="tertiary">
-                    {summary.bestSeller.units} sold
+                    {t('home.sold', { count: summary.bestSeller.units })}
                   </Text>
                 </>
               ) : (
                 <Text variant="caption" tone="tertiary">
-                  No sales in this period yet
+                  {t('home.noSalesYet')}
                 </Text>
               )}
             </Card>

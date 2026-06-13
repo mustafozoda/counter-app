@@ -160,7 +160,7 @@ export default function SettingsScreen() {
             onPress={() => router.push('/staff')}
           >
             <Text variant="body" weight="medium">
-              {staffCount > 0 ? `${staffCount} team member${staffCount === 1 ? '' : 's'}` : 'Add your team'}
+              {staffCount > 0 ? t('settings.teamMembers', { count: staffCount }) : t('settings.addTeam')}
             </Text>
             <ChevronDown size={18} color={colors.inkTertiary} strokeWidth={2} style={{ transform: [{ rotate: '-90deg' }] }} />
           </Card>

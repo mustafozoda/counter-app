@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { ChevronRight, ReceiptText } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -13,6 +14,7 @@ import { useTheme } from '@/theme';
 export default function OrdersScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const ordersQuery = useOrders();
   const orders = ordersQuery.data ?? [];
@@ -21,12 +23,11 @@ export default function OrdersScreen() {
     <Screen scroll tabbed>
       <View className="mt-2">
         <Text variant="h1" weight="bold">
-          Orders
+          {t('orders.title')}
         </Text>
         {orders.length > 0 ? (
           <Text variant="caption" tone="tertiary">
-            {orders.length} so far — the full pipeline (statuses, refunds, returns) arrives with
-            Phase 3
+            {t('orders.subtitle', { count: orders.length })}
           </Text>
         ) : null}
       </View>
@@ -41,9 +42,9 @@ export default function OrdersScreen() {
         <View className="flex-1 justify-center">
           <EmptyState
             icon={ReceiptText}
-            title="No orders yet"
-            message="Ring up your first sale and it will land here with its receipt."
-            actionLabel="Make a sale"
+            title={t('orders.emptyTitle')}
+            message={t('orders.emptyMessage')}
+            actionLabel={t('orders.makeSale')}
             onAction={() => router.push('/sell')}
           />
         </View>
@@ -65,9 +66,9 @@ export default function OrdersScreen() {
                       {order.number}
                     </Text>
                     {order.paymentStatus === 'refunded' ? (
-                      <Badge label="Refunded" tone="negative" />
+                      <Badge label={t('orders.refunded')} tone="negative" />
                     ) : order.paymentStatus === 'partial' ? (
-                      <Badge label="Partial refund" tone="caution" />
+                      <Badge label={t('orders.partialRefund')} tone="caution" />
                     ) : (
                       <Badge
                         label={order.payments
@@ -79,8 +80,8 @@ export default function OrdersScreen() {
                     )}
                   </View>
                   <Text variant="caption" tone="tertiary">
-                    {formatDayLabel(new Date(order.createdAt))} · {order.items.length} item
-                    {order.items.length === 1 ? '' : 's'}
+                    {formatDayLabel(new Date(order.createdAt))} ·{' '}
+                    {t('orders.items', { count: order.items.length })}
                   </Text>
                 </View>
                 <Text variant="title" weight="semibold" tabular>
