@@ -69,7 +69,7 @@ offline-first POS phase.
 - [x] **Phase 1** — inventory: products, categories, variants, barcode, low stock
 - [x] **Phase 2** — POS: cart, checkout, receipts, offline
 - [x] **Phase 3** — orders & customers (CRM)
-- [ ] **Phase 4** — dashboard + finance/bookkeeping
+- [x] **Phase 4** — dashboard + finance/bookkeeping
 - [ ] **Phase 5** — customer financing / installments (flagship)
 - [ ] **Phase 6** — suppliers/PO, promotions, analytics
 - [ ] **Phase 7** — online storefront

@@ -32,7 +32,7 @@ interface MenuEntry {
 
 const MENU: MenuEntry[] = [
   { icon: Users, label: 'Customers', description: 'Profiles, history, loyalty', phase: 'Phase 3', href: '/customers' },
-  { icon: Wallet, label: 'Finance', description: 'Revenue, expenses, profit', phase: 'Phase 4' },
+  { icon: Wallet, label: 'Finance', description: 'Revenue, expenses, profit', phase: 'Phase 4', href: '/finance' },
   { icon: HandCoins, label: 'Financing', description: 'Installments & layaway', phase: 'Phase 5' },
   { icon: Truck, label: 'Suppliers', description: 'Purchase orders & restocks', phase: 'Phase 6' },
   { icon: Tag, label: 'Promotions', description: 'Coupons & discounts', phase: 'Phase 6' },
