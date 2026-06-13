@@ -1,6 +1,7 @@
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BadgePercent, ShoppingBag, Trash2 } from 'lucide-react-native';
 import { forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -33,6 +34,7 @@ export const CartSheet = forwardRef<SheetRef, CartSheetProps>(function CartSheet
   ref,
 ) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const lines = useCartStore((s) => s.lines);
   const discount = useCartStore((s) => s.discount);
   const setQty = useCartStore((s) => s.setQty);
@@ -41,7 +43,7 @@ export const CartSheet = forwardRef<SheetRef, CartSheetProps>(function CartSheet
   const totals = computeTotals(lines, discount);
 
   return (
-    <Sheet ref={ref} title={`Cart · ${totals.itemCount} item${totals.itemCount === 1 ? '' : 's'}`} snapPoints={['72%']} raw>
+    <Sheet ref={ref} title={`${t('pos.cartTitle')} · ${t('pos.items', { count: totals.itemCount })}`} snapPoints={['72%']} raw>
       <BottomSheetScrollView
         contentContainerStyle={{ paddingBottom: 32 }}
         keyboardShouldPersistTaps="handled"
@@ -51,7 +53,7 @@ export const CartSheet = forwardRef<SheetRef, CartSheetProps>(function CartSheet
             <View className="items-center gap-2 py-10">
               <ShoppingBag size={28} color={colors.inkTertiary} strokeWidth={1.75} />
               <Text variant="body" tone="tertiary">
-                Cart is empty — tap products to add them.
+                {t('pos.cartEmpty')}
               </Text>
             </View>
           ) : null}
@@ -62,7 +64,7 @@ export const CartSheet = forwardRef<SheetRef, CartSheetProps>(function CartSheet
                 actions={[
                   {
                     icon: Trash2,
-                    label: 'Remove',
+                    label: t('actions.remove'),
                     tone: 'negative',
                     onPress: () => removeLine(line.variantId),
                   },
@@ -112,22 +114,22 @@ export const CartSheet = forwardRef<SheetRef, CartSheetProps>(function CartSheet
             <Text variant="body" weight="medium" tone={discount ? 'accent' : 'tertiary'}>
               {discount
                 ? discount.kind === 'percent'
-                  ? `${discount.value}% off applied`
-                  : `${formatMoney(discount.value, currency)} off applied`
-                : 'Add discount'}
+                  ? t('pos.percentApplied', { value: discount.value })
+                  : t('pos.amountApplied', { amount: formatMoney(discount.value, currency) })
+                : t('pos.addDiscount')}
             </Text>
           </PressableScale>
 
           <View className="mt-2 gap-1.5 rounded-md bg-surface-sunken p-4 dark:bg-surface">
-            <Row label="Subtotal" value={formatMoney(totals.subtotal, currency)} />
+            <Row label={t('pos.subtotal')} value={formatMoney(totals.subtotal, currency)} />
             {totals.discount > 0 ? (
-              <Row label="Discount" value={`-${formatMoney(totals.discount, currency)}`} tone="positive" />
+              <Row label={t('pos.discount')} value={`-${formatMoney(totals.discount, currency)}`} tone="positive" />
             ) : null}
-            {totals.tax > 0 ? <Row label="Tax" value={formatMoney(totals.tax, currency)} /> : null}
+            {totals.tax > 0 ? <Row label={t('pos.tax')} value={formatMoney(totals.tax, currency)} /> : null}
             <View className="my-1 h-px bg-hairline" />
             <View className="flex-row items-center justify-between">
               <Text variant="title" weight="semibold">
-                Total
+                {t('pos.total')}
               </Text>
               <Text variant="h2" weight="bold" tabular>
                 {formatMoney(totals.total, currency)}
@@ -136,7 +138,7 @@ export const CartSheet = forwardRef<SheetRef, CartSheetProps>(function CartSheet
           </View>
 
           <Button
-            label={`Charge ${formatMoney(totals.total, currency)}`}
+            label={t('pos.chargeAmount', { amount: formatMoney(totals.total, currency) })}
             size="lg"
             fullWidth
             disabled={lines.length === 0}

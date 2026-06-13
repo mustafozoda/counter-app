@@ -1,4 +1,5 @@
 import { forwardRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import {
@@ -19,11 +20,7 @@ import { variantLabel, variantStockStatus } from '../stock';
 
 type AdjustMode = 'restock' | 'remove' | 'return';
 
-const MODE_OPTIONS: { label: string; value: AdjustMode }[] = [
-  { label: 'Restock', value: 'restock' },
-  { label: 'Remove', value: 'remove' },
-  { label: 'Return', value: 'return' },
-];
+const MODE_VALUES: AdjustMode[] = ['restock', 'remove', 'return'];
 
 const MODE_TO_TYPE: Record<AdjustMode, StockMovementType> = {
   restock: 'restock',
@@ -43,10 +40,16 @@ export interface AdjustStockSheetProps {
  */
 export const AdjustStockSheet = forwardRef<SheetRef, AdjustStockSheetProps>(
   function AdjustStockSheet({ variant, productId, dismiss }, ref) {
+    const { t } = useTranslation();
     const [mode, setMode] = useState<AdjustMode>('restock');
     const [qty, setQty] = useState(1);
     const [reason, setReason] = useState('');
     const adjust = useAdjustStock();
+
+    const modeOptions: { label: string; value: AdjustMode }[] = MODE_VALUES.map((value) => ({
+      label: t(`stock.${value}`),
+      value,
+    }));
 
     const reset = () => {
       setMode('restock');
@@ -68,12 +71,15 @@ export const AdjustStockSheet = forwardRef<SheetRef, AdjustStockSheetProps>(
         {
           onSuccess: () => {
             toast.success(
-              'Stock updated',
-              `${variantLabel(variant)}: ${delta > 0 ? '+' : ''}${delta} units`,
+              t('stock.updated'),
+              t('stock.unitsDelta', {
+                label: variantLabel(variant),
+                delta: (delta > 0 ? '+' : '') + delta,
+              }),
             );
             dismiss();
           },
-          onError: () => toast.error('Could not update stock'),
+          onError: () => toast.error(t('stock.couldNotUpdate')),
         },
       );
     };
@@ -82,7 +88,7 @@ export const AdjustStockSheet = forwardRef<SheetRef, AdjustStockSheetProps>(
     const maxRemove = variant?.stockQty ?? 0;
 
     return (
-      <Sheet ref={ref} title="Adjust stock" onDismiss={reset}>
+      <Sheet ref={ref} title={t('stock.adjust')} onDismiss={reset}>
         {variant ? (
           <View className="gap-5">
             <View className="flex-row items-center justify-between">
@@ -95,14 +101,14 @@ export const AdjustStockSheet = forwardRef<SheetRef, AdjustStockSheetProps>(
                 </Text>
               </View>
               <Badge
-                label={`${variant.stockQty} on hand`}
+                label={t('stock.onHand', { count: variant.stockQty })}
                 tone={status === 'in-stock' ? 'positive' : status === 'low' ? 'caution' : 'negative'}
                 dot
               />
             </View>
 
             <SegmentedControl
-              options={MODE_OPTIONS}
+              options={modeOptions}
               value={mode}
               onChange={(m) => {
                 setMode(m);
@@ -119,13 +125,13 @@ export const AdjustStockSheet = forwardRef<SheetRef, AdjustStockSheetProps>(
               />
               {mode === 'remove' && maxRemove === 0 ? (
                 <Text variant="caption" tone="negative" className="mt-2">
-                  Nothing on hand to remove.
+                  {t('stock.nothingToRemove')}
                 </Text>
               ) : null}
             </View>
 
             <TextField
-              label={mode === 'remove' ? 'Reason (damage, loss…)' : 'Note (optional)'}
+              label={mode === 'remove' ? t('stock.reasonRemove') : t('stock.note')}
               value={reason}
               onChangeText={setReason}
             />
@@ -133,10 +139,10 @@ export const AdjustStockSheet = forwardRef<SheetRef, AdjustStockSheetProps>(
             <Button
               label={
                 mode === 'restock'
-                  ? `Add ${qty} to stock`
+                  ? t('stock.addToStock', { count: qty })
                   : mode === 'return'
-                    ? `Return ${qty} to stock`
-                    : `Remove ${qty} from stock`
+                    ? t('stock.returnToStock', { count: qty })
+                    : t('stock.removeFromStock', { count: qty })
               }
               size="lg"
               fullWidth

@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { Badge, PressableScale, Sheet, Text, type SheetRef } from '@/components/ui';
@@ -21,8 +22,9 @@ export interface VariantPickerSheetProps {
 /** Fast size/color chooser when a multi-variant tile is tapped at the counter. */
 export const VariantPickerSheet = forwardRef<SheetRef, VariantPickerSheetProps>(
   function VariantPickerSheet({ product, currency, onPick, dismiss }, ref) {
+    const { t } = useTranslation();
     return (
-      <Sheet ref={ref} title={product?.name ?? 'Choose variant'}>
+      <Sheet ref={ref} title={product?.name ?? t('pos.chooseVariant')}>
         <View className="gap-1">
           {product?.variants.map((variant) => {
             const status = variantStockStatus(variant);
@@ -53,7 +55,7 @@ export const VariantPickerSheet = forwardRef<SheetRef, VariantPickerSheetProps>(
                   {formatMoney(variantPrice(product, variant), currency)}
                 </Text>
                 <Badge
-                  label={out ? 'Out' : String(variant.stockQty)}
+                  label={out ? t('products.out') : String(variant.stockQty)}
                   tone={status === 'in-stock' ? 'positive' : status === 'low' ? 'caution' : 'negative'}
                   dot
                 />

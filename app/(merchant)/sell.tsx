@@ -2,6 +2,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, PackageOpen, ReceiptText, ScanBarcode, Share2, ShoppingBag, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
@@ -51,6 +52,7 @@ const GRID_GAP = 12;
 
 export default function SellScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const screenWidth = useContentWidth();
   const store = useStoreProfile((s) => s.store);
   const currency = store?.currencyCode ?? 'TJS';
@@ -103,7 +105,7 @@ export default function SellScreen() {
       haptics.press();
     } else {
       haptics.warning();
-      toast.warning('Not enough stock', `${product.name} has no more units available.`);
+      toast.warning(t('pos.notEnoughStock'), t('pos.noMoreUnits', { name: product.name }));
     }
   };
 
@@ -123,12 +125,12 @@ export default function SellScreen() {
         void productsApi.findByBarcode(code).then((hit) => {
           if (!hit) {
             haptics.warning();
-            toast.warning('No match', `Nothing in the catalog has barcode ${code}.`);
+            toast.warning(t('pos.noMatchTitle'), t('pos.noMatchBarcode', { code }));
             return;
           }
           if (productStockStatus([hit.variant]) === 'out') {
             haptics.warning();
-            toast.warning('Out of stock', hit.product.name);
+            toast.warning(t('pos.outOfStock'), hit.product.name);
             return;
           }
           addVariant(hit.product, hit.variant);
@@ -147,14 +149,14 @@ export default function SellScreen() {
           clearCart();
           setCompleted({ order, change });
         },
-        onError: () => toast.error('Sale failed', 'Nothing was charged — try again.'),
+        onError: () => toast.error(t('pos.saleFailed'), t('pos.saleFailedBody')),
       },
     );
   };
 
   const completeFinancedSale = (payments: PaymentEntry[], financing: FinancingChoice) => {
     if (!customerId) {
-      toast.warning('Attach a customer', 'Payment plans need a customer.');
+      toast.warning(t('pos.attachCustomerWarn'), t('pos.attachCustomerBody'));
       return;
     }
     createSale.mutate(
@@ -176,13 +178,13 @@ export default function SellScreen() {
                 haptics.success();
                 clearCart();
                 setCompleted({ order, change: 0 });
-                toast.success('Payment plan created', `${financing.count} installments scheduled`);
+                toast.success(t('pos.planCreated'), t('pos.planScheduled', { count: financing.count }));
               },
-              onError: () => toast.error('Plan failed', 'The sale was recorded; set up the plan from Financing.'),
+              onError: () => toast.error(t('pos.planFailed'), t('pos.planFailedBody')),
             },
           );
         },
-        onError: () => toast.error('Sale failed', 'Nothing was charged — try again.'),
+        onError: () => toast.error(t('pos.saleFailed'), t('pos.saleFailedBody')),
       },
     );
   };
@@ -203,7 +205,7 @@ export default function SellScreen() {
             className="mt-8 items-center"
           >
             <Text variant="h1" weight="bold">
-              Sale complete
+              {t('pos.saleComplete')}
             </Text>
             <CurrencyText
               amount={completed.order.total}
@@ -213,12 +215,12 @@ export default function SellScreen() {
               className="mt-2"
             />
             <Text variant="caption" tone="tertiary" className="mt-1">
-              Order {completed.order.number}
+              {t('pos.order', { number: completed.order.number })}
             </Text>
             {completed.change > 0 ? (
               <View className="mt-4 rounded-full bg-positive-tint px-4 py-2">
                 <Text variant="body" weight="semibold" tone="positive" tabular>
-                  Give {formatMoney(completed.change, currency)} change
+                  {t('pos.giveChange', { amount: formatMoney(completed.change, currency) })}
                 </Text>
               </View>
             ) : null}
@@ -229,7 +231,7 @@ export default function SellScreen() {
           className="mt-12 gap-3"
         >
           <Button
-            label="Share receipt"
+            label={t('pos.shareReceipt')}
             icon={Share2}
             variant="secondary"
             size="lg"
@@ -237,7 +239,7 @@ export default function SellScreen() {
             onPress={() => store && void shareReceiptPdf(completed.order, store)}
           />
           <Button
-            label="View receipt"
+            label={t('pos.viewReceipt')}
             icon={ReceiptText}
             variant="ghost"
             fullWidth
@@ -245,7 +247,7 @@ export default function SellScreen() {
               router.push({ pathname: '/receipt/[id]', params: { id: completed.order.id } })
             }
           />
-          <Button label="New sale" size="lg" fullWidth onPress={startNewSale} />
+          <Button label={t('pos.newSale')} size="lg" fullWidth onPress={startNewSale} />
         </Animated.View>
       </Screen>
     );
@@ -256,9 +258,9 @@ export default function SellScreen() {
     return (
       <Screen edges={['top', 'left', 'right', 'bottom']} padded={false}>
         <View className="flex-row items-center gap-3 px-5 pt-2">
-          <IconButton icon={ArrowLeft} accessibilityLabel="Back to cart" onPress={() => setMode('browse')} />
+          <IconButton icon={ArrowLeft} accessibilityLabel={t('pos.backToCart')} onPress={() => setMode('browse')} />
           <Text variant="h1" weight="bold">
-            Checkout
+            {t('pos.checkout')}
           </Text>
         </View>
         <CheckoutView
@@ -285,19 +287,19 @@ export default function SellScreen() {
     <Screen edges={['top', 'left', 'right', 'bottom']} padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
         <Text variant="h1" weight="bold">
-          Sell
+          {t('pos.title')}
         </Text>
         <View className="flex-row gap-2">
-          <IconButton icon={ScanBarcode} variant="tonal" accessibilityLabel="Scan to add" onPress={scanToAdd} />
-          <IconButton icon={X} accessibilityLabel="Close point of sale" onPress={() => router.back()} />
+          <IconButton icon={ScanBarcode} variant="tonal" accessibilityLabel={t('pos.scanToAdd')} onPress={scanToAdd} />
+          <IconButton icon={X} accessibilityLabel={t('pos.closePos')} onPress={() => router.back()} />
         </View>
       </View>
 
       <View className="gap-3 px-5 pb-3 pt-3">
-        <SearchBar value={query} onChangeText={setQuery} placeholder="Search products to sell" />
+        <SearchBar value={query} onChangeText={setQuery} placeholder={t('pos.searchProducts')} />
         {categories.length > 0 ? (
           <View className="flex-row flex-wrap gap-2">
-            <Chip label="All" selected={categoryId === null} onPress={() => setCategoryId(null)} />
+            <Chip label={t('common.all')} selected={categoryId === null} onPress={() => setCategoryId(null)} />
             {categories
               .filter((c) => c.parentId === null)
               .slice(0, 6)
@@ -323,13 +325,9 @@ export default function SellScreen() {
         <View className="flex-1 justify-center">
           <EmptyState
             icon={PackageOpen}
-            title="Nothing to sell"
-            message={
-              query || categoryId
-                ? 'No products match — clear the search or filters.'
-                : 'Add products to your catalog first.'
-            }
-            actionLabel={query || categoryId ? 'Clear filters' : 'Go to products'}
+            title={t('pos.nothingToSell')}
+            message={query || categoryId ? t('pos.noMatch') : t('pos.addFirst')}
+            actionLabel={query || categoryId ? t('actions.clear') : t('pos.goToProducts')}
             onAction={() => {
               if (query || categoryId) {
                 setQuery('');
@@ -375,7 +373,7 @@ export default function SellScreen() {
           <PressableScale
             onPress={() => cartSheet.current?.present()}
             accessibilityRole="button"
-            accessibilityLabel={`Cart: ${totals.itemCount} items, ${formatMoney(totals.total, currency)}`}
+            accessibilityLabel={`${t('pos.cartTitle')}: ${t('pos.items', { count: totals.itemCount })}, ${formatMoney(totals.total, currency)}`}
             className="h-16 flex-row items-center gap-3 rounded-full bg-primary px-5"
             style={{ shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, shadowOpacity: 0.4, elevation: 10 }}
           >
@@ -384,7 +382,7 @@ export default function SellScreen() {
             </View>
             <View className="flex-1">
               <Text variant="micro" weight="medium" tone="inverse" className="opacity-80">
-                {totals.itemCount} item{totals.itemCount === 1 ? '' : 's'}
+                {t('pos.items', { count: totals.itemCount })}
               </Text>
               <Text variant="title" weight="bold" tone="inverse" tabular>
                 {formatMoney(totals.total, currency)}
@@ -393,11 +391,11 @@ export default function SellScreen() {
             <PressableScale
               onPress={() => setMode('checkout')}
               accessibilityRole="button"
-              accessibilityLabel="Charge"
+              accessibilityLabel={t('pos.charge')}
               className="h-10 items-center justify-center rounded-full bg-white px-5"
             >
               <Text variant="caption" weight="bold" style={{ color: '#4F46E5' }}>
-                Charge
+                {t('pos.charge')}
               </Text>
             </PressableScale>
           </PressableScale>
