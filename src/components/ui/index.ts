@@ -1,4 +1,5 @@
 export * from './animated-number';
+export * from './avatar';
 export * from './badge';
 export * from './barcode-scanner-view';
 export * from './button';
@@ -12,6 +13,7 @@ export * from './image-picker-grid';
 export * from './logo';
 export * from './pressable-scale';
 export * from './progress-bar';
+export * from './progress-ring';
 export * from './quantity-stepper';
 export * from './screen';
 export * from './search-bar';

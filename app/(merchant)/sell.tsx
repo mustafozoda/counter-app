@@ -21,8 +21,10 @@ import {
   Text,
   useSheetRef,
 } from '@/components/ui';
+import { useCreatePlan } from '@/features/financing/hooks';
 import { CartSheet } from '@/features/pos/components/cart-sheet';
-import { CheckoutView } from '@/features/pos/components/checkout-view';
+import { CheckoutView, type FinancingChoice } from '@/features/pos/components/checkout-view';
+import { CustomerAttachSheet } from '@/features/pos/components/customer-attach-sheet';
 import { DiscountSheet } from '@/features/pos/components/discount-sheet';
 import { ProductTile } from '@/features/pos/components/product-tile';
 import { VariantPickerSheet } from '@/features/pos/components/variant-picker-sheet';
@@ -56,10 +58,14 @@ export default function SellScreen() {
   const productsQuery = useProducts();
   const categories = useCategories().data ?? [];
   const createSale = useCreateSale();
+  const createPlan = useCreatePlan();
   const setScanRequest = useScannerStore((s) => s.setRequest);
 
   const lines = useCartStore((s) => s.lines);
   const discount = useCartStore((s) => s.discount);
+  const customerId = useCartStore((s) => s.customerId);
+  const customerName = useCartStore((s) => s.customerName);
+  const setCustomer = useCartStore((s) => s.setCustomer);
   const addLine = useCartStore((s) => s.addLine);
   const clearCart = useCartStore((s) => s.clear);
 
@@ -72,6 +78,7 @@ export default function SellScreen() {
   const cartSheet = useSheetRef();
   const variantSheet = useSheetRef();
   const discountSheet = useSheetRef();
+  const customerSheet = useSheetRef();
 
   const totals = computeTotals(lines, discount);
   const tileWidth = (screenWidth - GRID_GUTTER * 2 - GRID_GAP) / 2;
@@ -132,12 +139,47 @@ export default function SellScreen() {
 
   const completeSale = (payments: PaymentEntry[], change: number) => {
     createSale.mutate(
-      { lines, totals, payments, customerId: null },
+      { lines, totals, payments, customerId },
       {
         onSuccess: (order) => {
           haptics.success();
           clearCart();
           setCompleted({ order, change });
+        },
+        onError: () => toast.error('Sale failed', 'Nothing was charged — try again.'),
+      },
+    );
+  };
+
+  const completeFinancedSale = (payments: PaymentEntry[], financing: FinancingChoice) => {
+    if (!customerId) {
+      toast.warning('Attach a customer', 'Payment plans need a customer.');
+      return;
+    }
+    createSale.mutate(
+      { lines, totals, payments, customerId },
+      {
+        onSuccess: (order) => {
+          const received = payments.reduce((sum, p) => sum + p.amount, 0);
+          createPlan.mutate(
+            {
+              orderId: order.id,
+              customerId,
+              principal: totals.total,
+              downPayment: Math.round(received * 100) / 100,
+              count: financing.count,
+              frequency: financing.frequency,
+            },
+            {
+              onSuccess: () => {
+                haptics.success();
+                clearCart();
+                setCompleted({ order, change: 0 });
+                toast.success('Payment plan created', `${financing.count} installments scheduled`);
+              },
+              onError: () => toast.error('Plan failed', 'The sale was recorded; set up the plan from Financing.'),
+            },
+          );
         },
         onError: () => toast.error('Sale failed', 'Nothing was charged — try again.'),
       },
@@ -221,8 +263,17 @@ export default function SellScreen() {
         <CheckoutView
           currency={currency}
           totals={totals}
-          busy={createSale.isPending}
+          busy={createSale.isPending || createPlan.isPending}
+          customerName={customerName}
+          onPressCustomer={() => customerSheet.current?.present()}
           onComplete={completeSale}
+          onCompleteFinanced={completeFinancedSale}
+        />
+        <CustomerAttachSheet
+          ref={customerSheet}
+          attachedId={customerId}
+          onAttach={setCustomer}
+          dismiss={() => customerSheet.current?.dismiss()}
         />
       </Screen>
     );

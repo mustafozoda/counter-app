@@ -10,6 +10,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { Alert, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -25,12 +26,14 @@ interface MenuEntry {
   label: string;
   description: string;
   phase: string;
+  /** Route when the module is live; absent = coming-soon toast. */
+  href?: string;
 }
 
 const MENU: MenuEntry[] = [
-  { icon: Users, label: 'Customers', description: 'Profiles, history, loyalty', phase: 'Phase 3' },
-  { icon: Wallet, label: 'Finance', description: 'Revenue, expenses, profit', phase: 'Phase 4' },
-  { icon: HandCoins, label: 'Financing', description: 'Installments & layaway', phase: 'Phase 5' },
+  { icon: Users, label: 'Customers', description: 'Profiles, history, loyalty', phase: 'Phase 3', href: '/customers' },
+  { icon: Wallet, label: 'Finance', description: 'Revenue, expenses, profit', phase: 'Phase 4', href: '/finance' },
+  { icon: HandCoins, label: 'Financing', description: 'Installments & layaway', phase: 'Phase 5', href: '/financing' },
   { icon: Truck, label: 'Suppliers', description: 'Purchase orders & restocks', phase: 'Phase 6' },
   { icon: Tag, label: 'Promotions', description: 'Coupons & discounts', phase: 'Phase 6' },
   { icon: BarChart3, label: 'Reports', description: 'Best sellers, trends, exports', phase: 'Phase 6' },
@@ -45,6 +48,7 @@ const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
 
 export default function MoreScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const store = useStoreProfile((s) => s.store);
@@ -101,9 +105,10 @@ export default function MoreScreen() {
             <PressableScale
               key={entry.label}
               scaleTo={0.99}
-              onPress={() =>
-                toast.info(`${entry.label} is on the way`, `Arrives with ${entry.phase}.`)
-              }
+              onPress={() => {
+                if (entry.href) router.push(entry.href as Parameters<typeof router.push>[0]);
+                else toast.info(`${entry.label} is on the way`, `Arrives with ${entry.phase}.`);
+              }}
               accessibilityRole="button"
               className={
                 index < MENU.length - 1
