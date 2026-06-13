@@ -23,6 +23,8 @@ import {
 } from '@/components/ui';
 import { PERIOD_OPTIONS, summarize, type FinancePeriod } from '@/features/finance/aggregate';
 import { useTransactions } from '@/features/finance/hooks';
+import { usePlans } from '@/features/financing/hooks';
+import { summarizeFinancing } from '@/features/financing/schedule';
 import { useOrders } from '@/features/pos/hooks';
 import { lowStockProducts } from '@/features/products/filtering';
 import { useProducts } from '@/features/products/hooks';
@@ -64,6 +66,8 @@ export default function HomeScreen() {
     () => lowStockProducts(productsQuery.data ?? []).length,
     [productsQuery.data],
   );
+  const plansQuery = usePlans();
+  const financing = useMemo(() => summarizeFinancing(plansQuery.data ?? []), [plansQuery.data]);
 
   const loading = productsQuery.isLoading || ordersQuery.isLoading || transactionsQuery.isLoading;
   const enter = (index: number) =>
@@ -169,19 +173,38 @@ export default function HomeScreen() {
           </Animated.View>
 
           <Animated.View entering={enter(5)} className="mt-3 flex-row gap-3">
-            <Card
-              className="flex-1 gap-2"
-              onPress={() => toast.info('Financing is on the way', 'Arrives with Phase 5.')}
-            >
-              <View className="h-8 w-8 items-center justify-center rounded-full bg-primary-tint">
-                <CalendarClock size={16} color={colors.primary} strokeWidth={2} />
+            <Card className="flex-1 gap-2" onPress={() => router.push('/financing')}>
+              <View
+                className={`h-8 w-8 items-center justify-center rounded-full ${
+                  financing.overdueCount > 0 ? 'bg-negative-tint' : 'bg-primary-tint'
+                }`}
+              >
+                <CalendarClock
+                  size={16}
+                  color={financing.overdueCount > 0 ? colors.negative : colors.primary}
+                  strokeWidth={2}
+                />
               </View>
               <Text variant="caption" weight="medium" tone="secondary">
                 Installments due
               </Text>
-              <Text variant="h2" weight="semibold" tone="tertiary">
-                —
-              </Text>
+              {financing.dueSoonCount > 0 ? (
+                <View className="flex-row items-baseline gap-2">
+                  <Text variant="h2" weight="semibold" tabular>
+                    {financing.dueSoonCount}
+                  </Text>
+                  <CurrencyText
+                    amount={financing.dueSoonAmount}
+                    currency={currency}
+                    variant="caption"
+                    tone="secondary"
+                  />
+                </View>
+              ) : (
+                <Text variant="caption" tone="tertiary">
+                  {financing.activePlans > 0 ? 'All on schedule' : 'No active plans'}
+                </Text>
+              )}
             </Card>
             <Card className="flex-1 gap-2" onPress={() => toast.info('Analytics is on the way', 'Arrives with Phase 6.')}>
               <View className="h-8 w-8 items-center justify-center rounded-full bg-positive-tint">

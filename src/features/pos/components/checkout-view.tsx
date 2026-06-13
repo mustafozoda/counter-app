@@ -12,13 +12,25 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
-import { Badge, Button, Chip, CurrencyText, PressableScale, Text, TextField } from '@/components/ui';
-import { formatMoney } from '@/lib/format';
+import { Badge, Button, Chip, CurrencyText, PressableScale, SegmentedControl, Text, TextField } from '@/components/ui';
+import {
+  COUNT_PRESETS,
+  FREQUENCY_OPTIONS,
+  generateSchedule,
+  type Frequency,
+} from '@/features/financing/schedule';
+import { formatDayLabel, formatMoney } from '@/lib/format';
 import { useTheme } from '@/theme';
 import type { PaymentMethod } from '@/types/models';
 
 import { PAYMENT_METHOD_LABELS } from '../receipt';
 import { cashSuggestions, changeDue, remainingDue, type CartTotals, type PaymentEntry } from '../totals';
+
+export interface FinancingChoice {
+  downPayment: number;
+  count: number;
+  frequency: Frequency;
+}
 
 interface MethodMeta {
   method: PaymentMethod;
@@ -31,7 +43,7 @@ const METHODS: MethodMeta[] = [
   { method: 'cash', icon: Banknote, enabled: true },
   { method: 'card', icon: CreditCard, enabled: true, note: 'manual capture' },
   { method: 'transfer', icon: Landmark, enabled: true },
-  { method: 'installment', icon: CalendarClock, enabled: false, note: 'Phase 5' },
+  { method: 'installment', icon: CalendarClock, enabled: true, note: 'pay over time' },
 ];
 
 export interface CheckoutViewProps {
@@ -41,6 +53,8 @@ export interface CheckoutViewProps {
   customerName: string | null;
   onPressCustomer: () => void;
   onComplete: (payments: PaymentEntry[], change: number) => void;
+  /** Financed sale: down payment collected now, the rest on a schedule. */
+  onCompleteFinanced: (downPayment: PaymentEntry[], financing: FinancingChoice) => void;
 }
 
 /** Payment collection: one-tap single payments or any split that reaches zero. */
@@ -51,6 +65,7 @@ export function CheckoutView({
   customerName,
   onPressCustomer,
   onComplete,
+  onCompleteFinanced,
 }: CheckoutViewProps) {
   const { colors } = useTheme();
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
@@ -58,6 +73,8 @@ export function CheckoutView({
   const [tendered, setTendered] = useState('');
   const [reference, setReference] = useState('');
   const [change, setChange] = useState(0);
+  const [planCount, setPlanCount] = useState(4);
+  const [planFrequency, setPlanFrequency] = useState<Frequency>('monthly');
 
   const remaining = remainingDue(totals.total, payments);
   const settled = remaining <= 0 && payments.length > 0;
@@ -156,7 +173,85 @@ export function CheckoutView({
         })}
       </View>
 
-      {!settled ? (
+      {!settled && method === 'installment' ? (
+        <Animated.View key="installment" entering={FadeInDown.springify().damping(18)} className="mt-5 gap-4">
+          {!customerName ? (
+            <View className="gap-3 rounded-md bg-caution-tint p-4">
+              <Text variant="body" weight="medium" tone="caution">
+                Payment plans need a customer
+              </Text>
+              <Button label="Attach a customer" variant="secondary" onPress={onPressCustomer} />
+            </View>
+          ) : (
+            <>
+              <TextField
+                label="Down payment (today)"
+                value={tendered}
+                onChangeText={(v) => setTendered(v.replace(',', '.'))}
+                keyboardType="decimal-pad"
+                helper={`Remainder is split over the schedule. Total ${formatMoney(remaining, currency)}.`}
+              />
+              <View className="flex-row flex-wrap gap-2">
+                {COUNT_PRESETS.map((count) => (
+                  <Chip
+                    key={count}
+                    label={`${count}×`}
+                    selected={planCount === count}
+                    onPress={() => setPlanCount(count)}
+                  />
+                ))}
+              </View>
+              <SegmentedControl options={FREQUENCY_OPTIONS} value={planFrequency} onChange={setPlanFrequency} />
+              {(() => {
+                const down = tenderValid ? Math.min(parsedTendered, remaining) : 0;
+                const schedule = generateSchedule(remaining, down, planCount, planFrequency);
+                const first = schedule[0];
+                if (!first) {
+                  return (
+                    <Text variant="caption" tone="caution" className="px-1">
+                      Down payment covers the full amount — no plan needed.
+                    </Text>
+                  );
+                }
+                return (
+                  <View className="gap-1 rounded-md bg-surface-sunken p-4 dark:bg-surface">
+                    <Text variant="body" weight="semibold" tabular>
+                      {planCount} × {formatMoney(first.amount, currency)}
+                    </Text>
+                    <Text variant="caption" tone="tertiary">
+                      First due {formatDayLabel(new Date(first.dueDate))} ·{' '}
+                      {FREQUENCY_OPTIONS.find((f) => f.value === planFrequency)?.label.toLowerCase()}
+                    </Text>
+                  </View>
+                );
+              })()}
+              <Button
+                label="Set up plan & complete sale"
+                size="lg"
+                fullWidth
+                loading={busy}
+                disabled={
+                  generateSchedule(
+                    remaining,
+                    tenderValid ? Math.min(parsedTendered, remaining) : 0,
+                    planCount,
+                    planFrequency,
+                  ).length === 0
+                }
+                onPress={() => {
+                  const down = tenderValid ? Math.min(parsedTendered, remaining) : 0;
+                  onCompleteFinanced(
+                    down > 0 ? [...payments, { method: 'cash', amount: down, ref: null }] : payments,
+                    { downPayment: down, count: planCount, frequency: planFrequency },
+                  );
+                }}
+              />
+            </>
+          )}
+        </Animated.View>
+      ) : null}
+
+      {!settled && method !== 'installment' ? (
         <Animated.View key={method} entering={FadeInDown.springify().damping(18)} className="mt-5 gap-4">
           {method === 'cash' ? (
             <>

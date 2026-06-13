@@ -10,6 +10,7 @@ import {
   Card,
   CurrencyText,
   IconButton,
+  ProgressBar,
   Screen,
   Skeleton,
   Text,
@@ -17,6 +18,8 @@ import {
 } from '@/components/ui';
 import { CustomerFormSheet } from '@/features/customers/components/customer-form-sheet';
 import { useCustomer, useDeleteCustomer } from '@/features/customers/hooks';
+import { usePlans } from '@/features/financing/hooks';
+import { planProgress } from '@/features/financing/schedule';
 import { useOrders } from '@/features/pos/hooks';
 import { formatDayLabel, formatMoney } from '@/lib/format';
 import { useStoreProfile } from '@/stores/store-profile';
@@ -40,6 +43,11 @@ export default function CustomerDetailScreen() {
     [ordersQuery.data, id],
   );
   const totalSpent = orders.reduce((sum, o) => sum + o.total, 0);
+  const plansQuery = usePlans();
+  const activePlans = useMemo(
+    () => (plansQuery.data ?? []).filter((p) => p.customerId === id && p.status === 'active'),
+    [plansQuery.data, id],
+  );
 
   if (customerQuery.isLoading) {
     return (
@@ -150,6 +158,37 @@ export default function CustomerDetailScreen() {
                 {customer.notes}
               </Text>
             </Card>
+          </Animated.View>
+        ) : null}
+
+        {activePlans.length > 0 ? (
+          <Animated.View entering={FadeInDown.delay(105).springify().damping(18)} className="mt-6 gap-3">
+            <Text variant="h2" weight="semibold">
+              Active payment plans
+            </Text>
+            {activePlans.map((plan) => {
+              const progress = planProgress(plan);
+              return (
+                <Card
+                  key={plan.id}
+                  padded={false}
+                  className="gap-2.5 p-4"
+                  onPress={() => router.push({ pathname: '/plan/[id]', params: { id: plan.id } })}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text variant="body" weight="semibold" tabular>
+                      {formatMoney(progress.outstanding, currency)} outstanding
+                    </Text>
+                    {progress.overdueCount > 0 ? (
+                      <Badge label="Overdue" tone="negative" dot />
+                    ) : (
+                      <Badge label={`${progress.paidCount}/${progress.totalCount} paid`} tone="accent" />
+                    )}
+                  </View>
+                  <ProgressBar progress={progress.ratio} tone={progress.overdueCount > 0 ? 'caution' : 'primary'} />
+                </Card>
+              );
+            })}
           </Animated.View>
         ) : null}
 

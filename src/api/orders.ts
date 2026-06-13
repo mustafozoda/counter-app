@@ -133,7 +133,11 @@ export class LocalOrdersApi implements OrdersApi {
       discount: input.totals.discount,
       tax: input.totals.tax,
       total: input.totals.total,
-      paymentStatus: 'paid',
+      // Financed sales pay only the down payment up front.
+      paymentStatus:
+        input.payments.reduce((sum, p) => sum + p.amount, 0) >= input.totals.total - 0.01
+          ? 'paid'
+          : 'partial',
       fulfillmentStatus: 'completed',
       createdAt,
     };
@@ -151,15 +155,20 @@ export class LocalOrdersApi implements OrdersApi {
       });
     }
 
-    doc.transactions.push({
-      id: createLocalId(),
-      type: 'income',
-      category: 'sales',
-      amount: input.totals.total,
-      note: `POS sale ${number}`,
-      date: createdAt,
-      linkedOrderId: order.id,
-    });
+    // Cash-basis income = money actually received now. Financed remainders
+    // post as income when each installment is collected.
+    const received = Math.round(input.payments.reduce((sum, p) => sum + p.amount, 0) * 100) / 100;
+    if (received > 0) {
+      doc.transactions.push({
+        id: createLocalId(),
+        type: 'income',
+        category: 'sales',
+        amount: received,
+        note: `POS sale ${number}`,
+        date: createdAt,
+        linkedOrderId: order.id,
+      });
+    }
 
     await this.save();
 

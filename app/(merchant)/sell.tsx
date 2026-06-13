@@ -21,8 +21,9 @@ import {
   Text,
   useSheetRef,
 } from '@/components/ui';
+import { useCreatePlan } from '@/features/financing/hooks';
 import { CartSheet } from '@/features/pos/components/cart-sheet';
-import { CheckoutView } from '@/features/pos/components/checkout-view';
+import { CheckoutView, type FinancingChoice } from '@/features/pos/components/checkout-view';
 import { CustomerAttachSheet } from '@/features/pos/components/customer-attach-sheet';
 import { DiscountSheet } from '@/features/pos/components/discount-sheet';
 import { ProductTile } from '@/features/pos/components/product-tile';
@@ -57,6 +58,7 @@ export default function SellScreen() {
   const productsQuery = useProducts();
   const categories = useCategories().data ?? [];
   const createSale = useCreateSale();
+  const createPlan = useCreatePlan();
   const setScanRequest = useScannerStore((s) => s.setRequest);
 
   const lines = useCartStore((s) => s.lines);
@@ -149,6 +151,41 @@ export default function SellScreen() {
     );
   };
 
+  const completeFinancedSale = (payments: PaymentEntry[], financing: FinancingChoice) => {
+    if (!customerId) {
+      toast.warning('Attach a customer', 'Payment plans need a customer.');
+      return;
+    }
+    createSale.mutate(
+      { lines, totals, payments, customerId },
+      {
+        onSuccess: (order) => {
+          const received = payments.reduce((sum, p) => sum + p.amount, 0);
+          createPlan.mutate(
+            {
+              orderId: order.id,
+              customerId,
+              principal: totals.total,
+              downPayment: Math.round(received * 100) / 100,
+              count: financing.count,
+              frequency: financing.frequency,
+            },
+            {
+              onSuccess: () => {
+                haptics.success();
+                clearCart();
+                setCompleted({ order, change: 0 });
+                toast.success('Payment plan created', `${financing.count} installments scheduled`);
+              },
+              onError: () => toast.error('Plan failed', 'The sale was recorded; set up the plan from Financing.'),
+            },
+          );
+        },
+        onError: () => toast.error('Sale failed', 'Nothing was charged — try again.'),
+      },
+    );
+  };
+
   const startNewSale = () => {
     setCompleted(null);
     setMode('browse');
@@ -226,10 +263,11 @@ export default function SellScreen() {
         <CheckoutView
           currency={currency}
           totals={totals}
-          busy={createSale.isPending}
+          busy={createSale.isPending || createPlan.isPending}
           customerName={customerName}
           onPressCustomer={() => customerSheet.current?.present()}
           onComplete={completeSale}
+          onCompleteFinanced={completeFinancedSale}
         />
         <CustomerAttachSheet
           ref={customerSheet}

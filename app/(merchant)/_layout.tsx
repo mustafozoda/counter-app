@@ -21,6 +21,8 @@ export default function MerchantLayout() {
       <Stack.Screen name="customer/[id]" />
       <Stack.Screen name="order/[id]" />
       <Stack.Screen name="finance" />
+      <Stack.Screen name="financing" />
+      <Stack.Screen name="plan/[id]" />
     </Stack>
   );
 }
