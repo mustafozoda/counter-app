@@ -16,6 +16,7 @@ export default function MerchantLayout() {
       <Stack.Screen name="product-form" />
       <Stack.Screen name="low-stock" />
       <Stack.Screen name="categories" />
+      <Stack.Screen name="receipt/[id]" />
     </Stack>
   );
 }

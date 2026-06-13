@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
-import { Button, IconButton, ProgressBar, Screen, Text } from '@/components/ui';
+import { Button, IconButton, ProgressBar, Screen, SuccessCheck, Text } from '@/components/ui';
 import {
   CurrencyStep,
   LogoStep,
@@ -13,7 +13,6 @@ import {
   initialDraft,
   type SetupDraft,
 } from '@/features/onboarding/steps';
-import { SuccessCheck } from '@/features/onboarding/success-check';
 import { haptics } from '@/lib/haptics';
 import { useAuthStore } from '@/stores/auth';
 import { useStoreProfile } from '@/stores/store-profile';
