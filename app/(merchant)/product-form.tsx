@@ -88,7 +88,7 @@ export default function ProductFormScreen() {
   const { colors } = useTheme();
 
   const store = useStoreProfile((s) => s.store);
-  const currencySymbol = getCurrencySpec(store?.currencyCode ?? 'USD').symbol;
+  const currencySymbol = getCurrencySpec(store?.currencyCode ?? 'TJS').symbol;
   const vertical = store?.vertical ?? 'other';
   const presets = useMemo(() => attributePresetsFor(vertical), [vertical]);
 

@@ -42,7 +42,7 @@ const PO_BADGE: Record<PurchaseOrderStatus, { label: string; tone: 'positive' | 
 export default function SuppliersScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const suppliersQuery = useSuppliers();
   const poQuery = usePurchaseOrders();

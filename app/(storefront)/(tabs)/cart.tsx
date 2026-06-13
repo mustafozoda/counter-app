@@ -15,7 +15,7 @@ import { useStoreProfile } from '@/stores/store-profile';
 export default function StorefrontCart() {
   const router = useRouter();
   const store = useStoreProfile((s) => s.store);
-  const currency = store?.currencyCode ?? 'USD';
+  const currency = store?.currencyCode ?? 'TJS';
 
   const lines = useStorefrontCart((s) => s.lines);
   const setQty = useStorefrontCart((s) => s.setQty);

@@ -66,7 +66,7 @@ const STOCK_CHIPS: { value: StockFilter; label: string }[] = [
 export default function ProductsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const productsQuery = useProducts();
   const categoriesQuery = useCategories();

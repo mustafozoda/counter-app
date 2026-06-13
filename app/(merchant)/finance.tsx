@@ -52,7 +52,7 @@ import type { Transaction } from '@/types/models';
 export default function FinanceScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const transactionsQuery = useTransactions();
   const ordersQuery = useOrders();

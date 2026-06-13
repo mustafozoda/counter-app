@@ -59,7 +59,7 @@ export default function HomeScreen() {
   const ordersQuery = useOrders();
   const transactionsQuery = useTransactions();
 
-  const currency = store?.currencyCode ?? 'USD';
+  const currency = store?.currencyCode ?? 'TJS';
   const summary = useMemo(
     () => summarize(transactionsQuery.data ?? [], ordersQuery.data ?? [], period),
     [transactionsQuery.data, ordersQuery.data, period],

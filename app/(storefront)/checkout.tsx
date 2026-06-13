@@ -31,7 +31,7 @@ export default function StorefrontCheckout() {
   const router = useRouter();
   const { colors } = useTheme();
   const store = useStoreProfile((s) => s.store);
-  const currency = store?.currencyCode ?? 'USD';
+  const currency = store?.currencyCode ?? 'TJS';
 
   const lines = useStorefrontCart((s) => s.lines);
   const clear = useStorefrontCart((s) => s.clear);

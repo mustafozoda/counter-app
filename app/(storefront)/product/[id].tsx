@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Check, Heart, Minus, Plus, ShoppingBag } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Badge, Button, IconButton, PressableScale, Screen, Skeleton, Text } from '@/components/ui';
@@ -10,6 +10,7 @@ import { ProductImage } from '@/features/products/components/product-image';
 import { useProduct } from '@/features/products/hooks';
 import { variantLabel, variantPrice, variantStockStatus } from '@/features/products/stock';
 import { formatMoney } from '@/lib/format';
+import { useContentWidth } from '@/lib/responsive';
 import { haptics } from '@/lib/haptics';
 import { useStorefrontCart } from '@/stores/storefront-cart';
 import { useStoreProfile } from '@/stores/store-profile';
@@ -21,9 +22,9 @@ import type { ProductVariant } from '@/types/models';
 export default function StorefrontProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const width = useContentWidth();
   const { colors } = useTheme();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const productQuery = useProduct(id);
   const product = productQuery.data;

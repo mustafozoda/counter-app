@@ -49,7 +49,7 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
-  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
+  const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const orderQuery = useOrder(id);
   const order = orderQuery.data;

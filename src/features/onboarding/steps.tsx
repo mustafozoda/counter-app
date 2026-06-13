@@ -31,7 +31,7 @@ export interface SetupDraft {
 export const initialDraft: SetupDraft = {
   name: '',
   vertical: null,
-  currencyCode: 'USD',
+  currencyCode: 'TJS',
   logoUri: null,
   productName: '',
   productPrice: '',

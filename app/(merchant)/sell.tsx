@@ -2,7 +2,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, PackageOpen, ReceiptText, ScanBarcode, Share2, ShoppingBag, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import type { OrderWithPayments } from '@/api/orders';
@@ -36,6 +36,7 @@ import { useCategories, useProducts } from '@/features/products/hooks';
 import { productStockStatus, type ProductWithVariants } from '@/features/products/stock';
 import { formatMoney } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
+import { useContentWidth } from '@/lib/responsive';
 import { useCartStore } from '@/stores/cart';
 import { useScannerStore } from '@/stores/scanner';
 import { useStoreProfile } from '@/stores/store-profile';
@@ -50,9 +51,9 @@ const GRID_GAP = 12;
 
 export default function SellScreen() {
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
+  const screenWidth = useContentWidth();
   const store = useStoreProfile((s) => s.store);
-  const currency = store?.currencyCode ?? 'USD';
+  const currency = store?.currencyCode ?? 'TJS';
   const taxRate = store?.taxRate ?? 0;
 
   const productsQuery = useProducts();
