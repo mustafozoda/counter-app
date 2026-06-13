@@ -44,6 +44,12 @@
         {
           "photosPermission": "Counter uses your photo library so you can add product and store images."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Counter uses the camera to scan product barcodes."
+        }
       ]
     ],
     "experiments": {
