@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, View } from 'react-native';
 
 import { BarcodeScannerView, IconButton, Screen, Text } from '@/components/ui';
@@ -12,6 +13,7 @@ import { toast } from '@/stores/toast';
 
 export default function ScanScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const request = useScannerStore((s) => s.request);
   const resetRequest = useScannerStore((s) => s.reset);
   const busy = useRef(false);
@@ -40,10 +42,10 @@ export default function ScanScreen() {
     }
 
     haptics.warning();
-    Alert.alert('No match', `Nothing in your catalog has barcode ${code}.`, [
-      { text: 'Keep scanning', style: 'cancel', onPress: () => (busy.current = false) },
+    Alert.alert(t('pos.noMatchTitle'), t('pos.noMatchBarcode', { code }), [
+      { text: t('scan.keepScanning'), style: 'cancel', onPress: () => (busy.current = false) },
       {
-        text: 'Create product',
+        text: t('scan.createProduct'),
         onPress: () => {
           resetRequest();
           router.replace({ pathname: '/product-form', params: { barcode: code } });
@@ -56,18 +58,14 @@ export default function ScanScreen() {
     <Screen edges={['top', 'left', 'right', 'bottom']}>
       <View className="flex-row items-center justify-between pt-2">
         <Text variant="h1" weight="bold">
-          {request.mode === 'capture' ? 'Scan barcode' : 'Find by barcode'}
+          {request.mode === 'capture' ? t('scan.scanBarcode') : t('scan.findByBarcode')}
         </Text>
-        <IconButton icon={X} accessibilityLabel="Close scanner" onPress={close} />
+        <IconButton icon={X} accessibilityLabel={t('scan.closeScanner')} onPress={close} />
       </View>
       <View className="flex-1 py-4">
         <BarcodeScannerView
           onScanned={(code) => void handleScan(code)}
-          hint={
-            request.mode === 'capture'
-              ? 'Scan the label to fill the barcode field'
-              : 'Scan any product label to look it up'
-          }
+          hint={request.mode === 'capture' ? t('scan.hintCapture') : t('scan.hintFind')}
         />
       </View>
     </Screen>

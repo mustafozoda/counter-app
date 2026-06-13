@@ -1,5 +1,6 @@
 import { TicketPercent } from 'lucide-react-native';
 import { forwardRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { Button, Chip, IconButton, SegmentedControl, Sheet, Text, TextField, type SheetRef } from '@/components/ui';
@@ -25,6 +26,7 @@ export const DiscountSheet = forwardRef<SheetRef, DiscountSheetProps>(function D
   { currency, dismiss },
   ref,
 ) {
+  const { t } = useTranslation();
   const discount = useCartStore((s) => s.discount);
   const setDiscount = useCartStore((s) => s.setDiscount);
   const promotions = usePromotions().data ?? [];
@@ -42,10 +44,10 @@ export const DiscountSheet = forwardRef<SheetRef, DiscountSheetProps>(function D
   const applyCoupon = () => {
     const promo = findPromotionByCode(promotions, coupon);
     if (!promo) {
-      toast.error('Invalid code', 'No live promotion matches that code.');
+      toast.error(t('pos.invalidCode'), t('pos.noLivePromo'));
       return;
     }
-    toast.success('Coupon applied', `${promo.name} · ${promotionSummary(promo)}`);
+    toast.success(t('pos.couponApplied'), `${promo.name} · ${promotionSummary(promo)}`);
     apply(promotionToDiscount(promo));
     setCoupon('');
   };
@@ -54,11 +56,11 @@ export const DiscountSheet = forwardRef<SheetRef, DiscountSheetProps>(function D
   const valid = Number.isFinite(parsed) && parsed > 0 && (kind === 'fixed' || parsed <= 100);
 
   return (
-    <Sheet ref={ref} title="Discount">
+    <Sheet ref={ref} title={t('pos.discountTitle')}>
       <View className="gap-4">
         <View className="flex-row items-end gap-2">
           <TextField
-            label="Coupon code"
+            label={t('pos.couponCode')}
             icon={TicketPercent}
             value={coupon}
             onChangeText={(v) => setCoupon(v.toUpperCase())}
@@ -71,7 +73,7 @@ export const DiscountSheet = forwardRef<SheetRef, DiscountSheetProps>(function D
             icon={TicketPercent}
             variant="tonal"
             size={56}
-            accessibilityLabel="Apply coupon"
+            accessibilityLabel={t('actions.apply')}
             onPress={applyCoupon}
           />
         </View>
@@ -79,7 +81,7 @@ export const DiscountSheet = forwardRef<SheetRef, DiscountSheetProps>(function D
         <View className="flex-row items-center gap-3">
           <View className="h-px flex-1 bg-hairline" />
           <Text variant="micro" tone="tertiary">
-            OR
+            {t('pos.or')}
           </Text>
           <View className="h-px flex-1 bg-hairline" />
         </View>
@@ -97,28 +99,28 @@ export const DiscountSheet = forwardRef<SheetRef, DiscountSheetProps>(function D
 
         <SegmentedControl<Kind>
           options={[
-            { label: 'Percent %', value: 'percent' },
-            { label: `Amount ${symbol}`, value: 'fixed' },
+            { label: t('pos.percent'), value: 'percent' },
+            { label: t('pos.amountSym', { symbol }), value: 'fixed' },
           ]}
           value={kind}
           onChange={setKind}
         />
         <TextField
-          label={kind === 'percent' ? 'Percent off' : 'Amount off'}
+          label={kind === 'percent' ? t('pos.percentOff') : t('pos.amountOff')}
           prefix={kind === 'fixed' ? symbol : undefined}
           value={value}
           onChangeText={(v) => setValue(v.replace(',', '.'))}
           keyboardType="decimal-pad"
         />
         <Button
-          label="Apply discount"
+          label={t('pos.applyDiscount')}
           size="lg"
           fullWidth
           disabled={!valid}
           onPress={() => apply({ kind, value: parsed })}
         />
         {discount ? (
-          <Button label="Remove discount" variant="ghost" fullWidth onPress={() => apply(null)} />
+          <Button label={t('pos.removeDiscount')} variant="ghost" fullWidth onPress={() => apply(null)} />
         ) : null}
       </View>
     </Sheet>

@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
@@ -23,7 +24,6 @@ import { formatDayLabel, formatMoney } from '@/lib/format';
 import { useTheme } from '@/theme';
 import type { PaymentMethod } from '@/types/models';
 
-import { PAYMENT_METHOD_LABELS } from '../receipt';
 import { cashSuggestions, changeDue, remainingDue, type CartTotals, type PaymentEntry } from '../totals';
 
 export interface FinancingChoice {
@@ -68,6 +68,7 @@ export function CheckoutView({
   onCompleteFinanced,
 }: CheckoutViewProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [tendered, setTendered] = useState('');
@@ -109,7 +110,7 @@ export function CheckoutView({
     >
       <Animated.View entering={FadeInDown.springify().damping(18)} className="items-center py-6">
         <Text variant="caption" tone="secondary">
-          {settled ? 'Paid in full' : payments.length > 0 ? 'Remaining' : 'Total due'}
+          {settled ? t('pos.paidInFull') : payments.length > 0 ? t('pos.remaining') : t('pos.totalDue')}
         </Text>
         <CurrencyText
           amount={settled ? totals.total : remaining}
@@ -120,7 +121,7 @@ export function CheckoutView({
         />
         {payments.length > 0 && !settled ? (
           <Text variant="caption" tone="tertiary" tabular>
-            of {formatMoney(totals.total, currency)} total
+            {t('pos.ofTotal', { amount: formatMoney(totals.total, currency) })}
           </Text>
         ) : null}
       </Animated.View>
@@ -129,12 +130,12 @@ export function CheckoutView({
         scaleTo={0.98}
         onPress={onPressCustomer}
         accessibilityRole="button"
-        accessibilityLabel={customerName ? `Customer: ${customerName}` : 'Attach a customer'}
+        accessibilityLabel={customerName ?? t('pos.attachCustomer')}
         className="mb-4 h-12 flex-row items-center gap-3 rounded-md border border-hairline bg-surface px-4 dark:bg-surface-elevated"
       >
         <UserRound size={18} color={customerName ? colors.primary : colors.inkTertiary} strokeWidth={2} />
         <Text variant="body" weight={customerName ? 'medium' : 'regular'} tone={customerName ? 'primary' : 'tertiary'} className="flex-1">
-          {customerName ?? 'Walk-in · attach a customer'}
+          {customerName ?? t('pos.walkIn')}
         </Text>
         <ChevronRight size={16} color={colors.inkTertiary} strokeWidth={2} />
       </PressableScale>
@@ -161,11 +162,11 @@ export function CheckoutView({
                 strokeWidth={2}
               />
               <Text variant="micro" weight="semibold" tone={selected ? 'accent' : 'secondary'}>
-                {PAYMENT_METHOD_LABELS[meta.method]}
+                {t('payment.' + meta.method)}
               </Text>
               {meta.note ? (
                 <Text variant="micro" tone="tertiary">
-                  {meta.note}
+                  {meta.note === 'manual capture' ? t('pos.manualCapture') : t('pos.payOverTime')}
                 </Text>
               ) : null}
             </PressableScale>
@@ -178,18 +179,18 @@ export function CheckoutView({
           {!customerName ? (
             <View className="gap-3 rounded-md bg-caution-tint p-4">
               <Text variant="body" weight="medium" tone="caution">
-                Payment plans need a customer
+                {t('pos.planNeedsCustomer')}
               </Text>
-              <Button label="Attach a customer" variant="secondary" onPress={onPressCustomer} />
+              <Button label={t('pos.attachCustomer')} variant="secondary" onPress={onPressCustomer} />
             </View>
           ) : (
             <>
               <TextField
-                label="Down payment (today)"
+                label={t('pos.downPayment')}
                 value={tendered}
                 onChangeText={(v) => setTendered(v.replace(',', '.'))}
                 keyboardType="decimal-pad"
-                helper={`Remainder is split over the schedule. Total ${formatMoney(remaining, currency)}.`}
+                helper={t('pos.remainderSplit', { amount: formatMoney(remaining, currency) })}
               />
               <View className="flex-row flex-wrap gap-2">
                 {COUNT_PRESETS.map((count) => (
@@ -209,24 +210,26 @@ export function CheckoutView({
                 if (!first) {
                   return (
                     <Text variant="caption" tone="caution" className="px-1">
-                      Down payment covers the full amount — no plan needed.
+                      {t('pos.downCoversAll')}
                     </Text>
                   );
                 }
                 return (
                   <View className="gap-1 rounded-md bg-surface-sunken p-4 dark:bg-surface">
                     <Text variant="body" weight="semibold" tabular>
-                      {planCount} × {formatMoney(first.amount, currency)}
+                      {t('pos.planPreview', { count: planCount, amount: formatMoney(first.amount, currency) })}
                     </Text>
                     <Text variant="caption" tone="tertiary">
-                      First due {formatDayLabel(new Date(first.dueDate))} ·{' '}
-                      {FREQUENCY_OPTIONS.find((f) => f.value === planFrequency)?.label.toLowerCase()}
+                      {t('pos.firstDue', {
+                        date: formatDayLabel(new Date(first.dueDate)),
+                        frequency: FREQUENCY_OPTIONS.find((f) => f.value === planFrequency)?.label.toLowerCase(),
+                      })}
                     </Text>
                   </View>
                 );
               })()}
               <Button
-                label="Set up plan & complete sale"
+                label={t('pos.setupPlan')}
                 size="lg"
                 fullWidth
                 loading={busy}
@@ -265,16 +268,16 @@ export function CheckoutView({
                 ))}
               </View>
               <TextField
-                label="Cash received"
+                label={t('pos.cashReceived')}
                 value={tendered}
                 onChangeText={(v) => setTendered(v.replace(',', '.'))}
                 keyboardType="decimal-pad"
                 helper={
-                  previewChange > 0 ? `Change due: ${formatMoney(previewChange, currency)}` : undefined
+                  previewChange > 0 ? t('pos.changeDueHelper', { amount: formatMoney(previewChange, currency) }) : undefined
                 }
               />
               <Button
-                label={tenderValid ? `Add ${formatMoney(Math.min(parsedTendered, remaining), currency)} cash` : 'Add cash payment'}
+                label={tenderValid ? t('pos.addCash', { amount: formatMoney(Math.min(parsedTendered, remaining), currency) }) : t('pos.addCashPayment')}
                 size="lg"
                 fullWidth
                 disabled={!tenderValid}
@@ -284,20 +287,20 @@ export function CheckoutView({
           ) : (
             <>
               <TextField
-                label={`Amount (${PAYMENT_METHOD_LABELS[method].toLowerCase()})`}
+                label={t('pos.amountFor', { method: t('payment.' + method) })}
                 value={tendered}
                 onChangeText={(v) => setTendered(v.replace(',', '.'))}
                 keyboardType="decimal-pad"
-                helper={`Defaults to the remaining ${formatMoney(remaining, currency)}`}
+                helper={t('pos.defaultsRemaining', { amount: formatMoney(remaining, currency) })}
               />
               <TextField
-                label="Reference (optional)"
+                label={t('pos.reference')}
                 value={reference}
                 onChangeText={setReference}
                 autoCapitalize="characters"
               />
               <Button
-                label={`Add ${PAYMENT_METHOD_LABELS[method].toLowerCase()} payment`}
+                label={t('pos.addPayment', { method: t('payment.' + method) })}
                 size="lg"
                 fullWidth
                 onPress={() => addPayment(tenderValid ? parsedTendered : remaining)}
@@ -310,7 +313,7 @@ export function CheckoutView({
       {payments.length > 0 ? (
         <View className="mt-6 gap-2">
           <Text variant="caption" weight="medium" tone="tertiary">
-            PAYMENTS
+            {t('pos.payments')}
           </Text>
           {payments.map((payment, index) => (
             <Animated.View
@@ -319,7 +322,7 @@ export function CheckoutView({
               entering={FadeInDown.springify().damping(18)}
               className="flex-row items-center gap-3 rounded-md border border-hairline bg-surface px-4 py-3 dark:bg-surface-elevated"
             >
-              <Badge label={PAYMENT_METHOD_LABELS[payment.method]} tone="accent" />
+              <Badge label={t('payment.' + payment.method)} tone="accent" />
               {payment.ref ? (
                 <Text variant="caption" tone="tertiary" mono numberOfLines={1} className="flex-1">
                   {payment.ref}
@@ -334,7 +337,7 @@ export function CheckoutView({
                 onPress={() => removePayment(index)}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel="Remove payment"
+                accessibilityLabel={t('actions.remove')}
                 className="h-7 w-7 items-center justify-center rounded-full bg-surface-sunken dark:bg-surface"
               >
                 <X size={14} color={colors.inkSecondary} strokeWidth={2.5} />
@@ -344,7 +347,7 @@ export function CheckoutView({
           {change > 0 ? (
             <View className="flex-row items-center justify-between rounded-md bg-positive-tint px-4 py-3">
               <Text variant="body" weight="semibold" tone="positive">
-                Change due
+                {t('pos.changeDue')}
               </Text>
               <Text variant="title" weight="bold" tone="positive" tabular>
                 {formatMoney(change, currency)}
@@ -357,7 +360,7 @@ export function CheckoutView({
       {settled ? (
         <Animated.View entering={FadeInDown.springify().damping(16)} className="mt-8">
           <Button
-            label="Complete sale"
+            label={t('pos.completeSale')}
             size="lg"
             fullWidth
             loading={busy}

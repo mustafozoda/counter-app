@@ -1,6 +1,7 @@
 import { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Search, UserRoundPlus, UserRoundX } from 'lucide-react-native';
 import { forwardRef, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { Avatar, Button, PressableScale, Sheet, Text, type SheetRef } from '@/components/ui';
@@ -19,6 +20,7 @@ export interface CustomerAttachSheetProps {
 /** Attach a customer to the sale: search, pick, quick-add, or detach. */
 export const CustomerAttachSheet = forwardRef<SheetRef, CustomerAttachSheetProps>(
   function CustomerAttachSheet({ attachedId, onAttach, dismiss }, ref) {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const customersQuery = useCustomers();
     const saveCustomer = useSaveCustomer();
@@ -36,7 +38,7 @@ export const CustomerAttachSheet = forwardRef<SheetRef, CustomerAttachSheetProps
         { name, phone: null, email: null, notes: '', tags: [] },
         {
           onSuccess: (customer) => {
-            toast.success('Customer added', customer.name);
+            toast.success(t('pos.customerAdded'), customer.name);
             onAttach({ id: customer.id, name: customer.name });
             setQuery('');
             dismiss();
@@ -64,30 +66,30 @@ export const CustomerAttachSheet = forwardRef<SheetRef, CustomerAttachSheetProps
             {item.name}
           </Text>
           <Text variant="caption" tone="tertiary" numberOfLines={1}>
-            {[item.phone, item.email].filter(Boolean).join(' · ') || 'No contact info'}
+            {[item.phone, item.email].filter(Boolean).join(' · ') || t('common.noContact')}
           </Text>
         </View>
       </PressableScale>
     );
 
     return (
-      <Sheet ref={ref} title="Attach customer" snapPoints={['70%']} raw onDismiss={() => setQuery('')}>
+      <Sheet ref={ref} title={t('pos.attachCustomer')} snapPoints={['70%']} raw onDismiss={() => setQuery('')}>
         <View className="mx-5 my-3 flex-row items-center gap-2 rounded-full bg-surface-sunken px-4 dark:bg-surface">
           <Search size={18} color={colors.inkTertiary} strokeWidth={2} />
           <BottomSheetTextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search or type a new name"
+            placeholder={t('pos.searchOrAdd')}
             placeholderTextColor={colors.inkTertiary}
             style={[textStyle('body'), { flex: 1, height: 44, color: colors.ink }]}
-            accessibilityLabel="Search customers"
+            accessibilityLabel={t('pos.searchOrAdd')}
           />
         </View>
 
         {attachedId ? (
           <View className="mx-5 mb-2">
             <Button
-              label="Detach customer"
+              label={t('pos.detachCustomer')}
               variant="ghost"
               icon={UserRoundX}
               onPress={() => {
@@ -108,12 +110,12 @@ export const CustomerAttachSheet = forwardRef<SheetRef, CustomerAttachSheetProps
             <View className="items-center gap-3 px-5 py-8">
               <Text variant="body" tone="tertiary" className="text-center">
                 {query.trim().length >= 2
-                  ? `No one named “${query.trim()}” yet.`
-                  : 'No customers yet — type a name to add one.'}
+                  ? t('pos.noOneNamed', { name: query.trim() })
+                  : t('pos.noCustomersYet')}
               </Text>
               {query.trim().length >= 2 ? (
                 <Button
-                  label={`Add “${query.trim()}”`}
+                  label={t('pos.addNamed', { name: query.trim() })}
                   icon={UserRoundPlus}
                   variant="secondary"
                   loading={saveCustomer.isPending}
