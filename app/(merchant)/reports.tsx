@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, BarChart3, Clock, Crown, TrendingDown } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -23,16 +24,17 @@ import { useTheme } from '@/theme';
 
 type RangeKey = '7' | '30' | '90';
 
-const RANGE_OPTIONS: { label: string; value: RangeKey }[] = [
-  { label: '7 days', value: '7' },
-  { label: '30 days', value: '30' },
-  { label: '90 days', value: '90' },
-];
-
 export default function ReportsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { colors } = useTheme();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
+
+  const rangeOptions: { label: string; value: RangeKey }[] = [
+    { label: t('reports.days7'), value: '7' },
+    { label: t('reports.days30'), value: '30' },
+    { label: t('reports.days90'), value: '90' },
+  ];
 
   const ordersQuery = useOrders();
   const [range, setRange] = useState<RangeKey>('30');
@@ -45,15 +47,15 @@ export default function ReportsScreen() {
   return (
     <Screen padded={false}>
       <View className="flex-row items-center gap-3 px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <Text variant="h1" weight="bold">
-          Reports
+          {t('reports.title')}
         </Text>
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-16" showsVerticalScrollIndicator={false}>
         <View className="pt-3">
-          <SegmentedControl options={RANGE_OPTIONS} value={range} onChange={setRange} />
+          <SegmentedControl options={rangeOptions} value={range} onChange={setRange} />
         </View>
 
         {ordersQuery.isLoading ? (
@@ -66,8 +68,8 @@ export default function ReportsScreen() {
           <View className="pt-10">
             <EmptyState
               icon={BarChart3}
-              title="No sales to report yet"
-              message="Make some sales and your best sellers, trends and peak hours will appear here."
+              title={t('reports.emptyTitle')}
+              message={t('reports.emptyMsg')}
             />
           </View>
         ) : (
@@ -75,13 +77,13 @@ export default function ReportsScreen() {
             <Animated.View entering={FadeInDown.springify().damping(18)} className="mt-4 flex-row gap-3">
               <Card className="flex-1 gap-1">
                 <Text variant="caption" tone="secondary">
-                  Revenue
+                  {t('reports.revenue')}
                 </Text>
                 <CurrencyText amount={report.totalRevenue} currency={currency} variant="h1" animated />
               </Card>
               <Card className="flex-1 gap-1">
                 <Text variant="caption" tone="secondary">
-                  Avg order
+                  {t('reports.avgOrder')}
                 </Text>
                 <CurrencyText amount={report.averageOrderValue} currency={currency} variant="h1" animated />
               </Card>
@@ -91,7 +93,7 @@ export default function ReportsScreen() {
             <Animated.View entering={FadeInDown.delay(40).springify().damping(18)} className="mt-3">
               <Card className="gap-3">
                 <Text variant="caption" weight="medium" tone="secondary">
-                  Revenue trend
+                  {t('reports.revenueTrend')}
                 </Text>
                 <View className="h-32 flex-row items-end justify-between gap-0.5">
                   {report.revenueByDay.map((day, index) => (
@@ -116,7 +118,7 @@ export default function ReportsScreen() {
                 <View className="flex-row items-center gap-2">
                   <Crown size={16} color={colors.caution} strokeWidth={2} />
                   <Text variant="caption" weight="medium" tone="secondary">
-                    Best sellers
+                    {t('reports.bestSellers')}
                   </Text>
                 </View>
                 {report.bestSellers.map((seller) => (
@@ -142,7 +144,7 @@ export default function ReportsScreen() {
                   <View className="flex-row items-center gap-2">
                     <TrendingDown size={16} color={colors.inkSecondary} strokeWidth={2} />
                     <Text variant="caption" weight="medium" tone="secondary">
-                      Slow movers
+                      {t('reports.slowMovers')}
                     </Text>
                   </View>
                   {report.slowMovers.map((s) => (
@@ -151,7 +153,7 @@ export default function ReportsScreen() {
                         {s.name}
                       </Text>
                       <Text variant="caption" tone="tertiary" tabular>
-                        {s.units} sold
+                        {t('reports.sold', { count: s.units })}
                       </Text>
                     </View>
                   ))}
@@ -168,10 +170,10 @@ export default function ReportsScreen() {
                   </View>
                   <View className="flex-1">
                     <Text variant="caption" tone="secondary">
-                      Busiest time of day
+                      {t('reports.busiest')}
                     </Text>
                     <Text variant="title" weight="semibold">
-                      Around {hourLabel(report.peakHour)}
+                      {t('reports.around', { time: hourLabel(report.peakHour) })}
                     </Text>
                   </View>
                 </Card>

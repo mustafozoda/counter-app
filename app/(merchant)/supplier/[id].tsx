@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, PackagePlus, Plus, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -43,6 +44,7 @@ interface DraftLine {
 }
 
 export default function SupplierDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
@@ -79,7 +81,7 @@ export default function SupplierDetailScreen() {
     return (
       <Screen contentClassName="justify-center">
         <Text variant="h2" weight="semibold" className="text-center">
-          This supplier no longer exists.
+          {t('suppliers.gone')}
         </Text>
       </Screen>
     );
@@ -90,7 +92,7 @@ export default function SupplierDetailScreen() {
 
   const submitPo = () => {
     if (draftLines.length === 0) {
-      toast.error('Nothing to order', 'Add at least one product.');
+      toast.error(t('suppliers.nothingToOrder'), t('suppliers.nothingToOrderBody'));
       return;
     }
     const items: PurchaseOrderItem[] = draftLines.map((l) => ({
@@ -102,7 +104,7 @@ export default function SupplierDetailScreen() {
       { supplierId: supplier.id, items },
       {
         onSuccess: () => {
-          toast.success('Purchase order created', `${draftLines.length} items · ${formatMoney(total, currency)}`);
+          toast.success(t('suppliers.poCreated'), `${draftLines.length} items · ${formatMoney(total, currency)}`);
           setDraft({});
           router.back();
         },
@@ -111,15 +113,15 @@ export default function SupplierDetailScreen() {
   };
 
   const confirmDelete = () =>
-    Alert.alert('Delete supplier', `Remove "${supplier.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('suppliers.deleteSupplier'), t('suppliers.deleteSupplierBody', { name: supplier.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () =>
           deleteSupplier.mutate(supplier.id, {
             onSuccess: () => {
-              toast.success('Supplier deleted', supplier.name);
+              toast.success(t('suppliers.supplierDeleted'), supplier.name);
               router.back();
             },
           }),
@@ -129,8 +131,8 @@ export default function SupplierDetailScreen() {
   return (
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
-        <IconButton icon={Trash2} accessibilityLabel="Delete supplier" onPress={confirmDelete} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
+        <IconButton icon={Trash2} accessibilityLabel={t('suppliers.deleteSupplier')} onPress={confirmDelete} />
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-32" showsVerticalScrollIndicator={false}>
@@ -152,16 +154,16 @@ export default function SupplierDetailScreen() {
 
         <View className="mt-6 flex-row items-center justify-between">
           <Text variant="h2" weight="semibold">
-            New purchase order
+            {t('suppliers.newPo')}
           </Text>
-          <Button label="Add items" size="sm" variant="secondary" icon={Plus} onPress={() => pickerSheet.current?.present()} />
+          <Button label={t('suppliers.addItems')} size="sm" variant="secondary" icon={Plus} onPress={() => pickerSheet.current?.present()} />
         </View>
 
         {draftLines.length === 0 ? (
           <Card className="mt-3 items-center gap-2 py-8">
             <PackagePlus size={26} color={colors.inkTertiary} strokeWidth={1.75} />
             <Text variant="caption" tone="tertiary">
-              Add products to build a purchase order.
+              {t('suppliers.addItemsHint')}
             </Text>
           </Card>
         ) : (
@@ -186,7 +188,7 @@ export default function SupplierDetailScreen() {
                   />
                 </View>
                 <TextField
-                  label={`Unit cost (${symbol})`}
+                  label={t('suppliers.unitCost', { symbol })}
                   value={String(line.unitCost)}
                   onChangeText={(v) => {
                     const cost = Number.parseFloat(v.replace(',', '.'));
@@ -204,19 +206,19 @@ export default function SupplierDetailScreen() {
         <Animated.View entering={FadeInDown.springify().damping(18)} className="absolute bottom-0 left-0 right-0 border-t border-hairline bg-surface px-5 pb-8 pt-3 dark:bg-surface-elevated">
           <View className="mb-3 flex-row items-center justify-between">
             <Text variant="body" tone="secondary">
-              Total cost
+              {t('suppliers.totalCost')}
             </Text>
             <CurrencyText amount={total} currency={currency} variant="h2" />
           </View>
-          <Button label="Create purchase order" size="lg" fullWidth loading={createPo.isPending} onPress={submitPo} />
+          <Button label={t('suppliers.createPo')} size="lg" fullWidth loading={createPo.isPending} onPress={submitPo} />
         </Animated.View>
       ) : null}
 
-      <Sheet ref={pickerSheet} title="Add products" snapPoints={['70%']}>
+      <Sheet ref={pickerSheet} title={t('suppliers.addProducts')} snapPoints={['70%']}>
         <ScrollView contentContainerClassName="gap-2 pb-6" showsVerticalScrollIndicator={false}>
           {products.length === 0 ? (
             <Text variant="body" tone="tertiary" className="py-6 text-center">
-              No products yet — add some in the catalog first.
+              {t('suppliers.noProductsYet')}
             </Text>
           ) : (
             products.flatMap((product) =>
@@ -246,7 +248,7 @@ export default function SupplierDetailScreen() {
                         {product.name}
                       </Text>
                       <Text variant="caption" tone="tertiary">
-                        {variantLabel(variant)} · cost {formatMoney(product.cost, currency)}
+                        {variantLabel(variant)} · {t('suppliers.cost', { amount: formatMoney(product.cost, currency) })}
                       </Text>
                     </View>
                     {inDraft ? <Badge label={`×${draft[variant.id]?.qty}`} tone="accent" /> : <Plus size={18} color={colors.inkTertiary} strokeWidth={2} />}

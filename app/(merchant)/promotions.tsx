@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, BadgePercent, Plus, Tag, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -26,22 +27,23 @@ import {
   useSavePromotion,
   useSetPromotionActive,
 } from '@/features/promotions/hooks';
-import { isPromotionLive, promotionSummary } from '@/features/promotions/validity';
+import { isPromotionLive } from '@/features/promotions/validity';
 import { getCurrencySpec } from '@/lib/format';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import type { PromotionType } from '@/types/models';
 
-const TYPE_OPTIONS: { label: string; value: PromotionType }[] = [
-  { label: 'Percent', value: 'percent' },
-  { label: 'Fixed', value: 'fixed' },
-  { label: 'BOGO', value: 'bogo' },
-];
-
 export default function PromotionsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const symbol = getCurrencySpec(currency).symbol;
+
+  const typeOptions: { label: string; value: PromotionType }[] = [
+    { label: t('promotions.typePercent'), value: 'percent' },
+    { label: t('promotions.typeFixed'), value: 'fixed' },
+    { label: t('promotions.typeBogo'), value: 'bogo' },
+  ];
 
   const promotionsQuery = usePromotions();
   const savePromotion = useSavePromotion();
@@ -66,12 +68,12 @@ export default function PromotionsScreen() {
 
   const submit = () => {
     if (name.trim().length < 2) {
-      toast.error('Name needed', 'Give the promotion a name.');
+      toast.error(t('promotions.nameNeeded'), t('promotions.nameNeededBody'));
       return;
     }
     const parsed = Number.parseFloat(value.replace(',', '.'));
     if (type !== 'bogo' && (!Number.isFinite(parsed) || parsed <= 0)) {
-      toast.error('Enter a value', type === 'percent' ? 'Percentage off' : 'Amount off');
+      toast.error(t('promotions.enterValue'), type === 'percent' ? t('promotions.percentOff') : t('promotions.amountOff'));
       return;
     }
     // Percent is stored as a 0–1 ratio.
@@ -88,7 +90,7 @@ export default function PromotionsScreen() {
       },
       {
         onSuccess: () => {
-          toast.success('Promotion saved', name.trim());
+          toast.success(t('promotions.promotionSaved'), name.trim());
           editSheet.current?.dismiss();
         },
       },
@@ -96,12 +98,12 @@ export default function PromotionsScreen() {
   };
 
   const confirmDelete = (id: string, label: string) =>
-    Alert.alert('Delete promotion', `Remove "${label}"?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('promotions.deletePromotion'), t('promotions.deletePromotionBody', { name: label }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
-        onPress: () => deletePromotion.mutate(id, { onSuccess: () => toast.success('Promotion deleted') }),
+        onPress: () => deletePromotion.mutate(id, { onSuccess: () => toast.success(t('promotions.promotionDeleted')) }),
       },
     ]);
 
@@ -109,12 +111,12 @@ export default function PromotionsScreen() {
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
         <View className="flex-row items-center gap-3">
-          <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+          <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
           <Text variant="h1" weight="bold">
-            Promotions
+            {t('promotions.title')}
           </Text>
         </View>
-        <IconButton icon={Plus} variant="tonal" accessibilityLabel="Add promotion" onPress={openNew} />
+        <IconButton icon={Plus} variant="tonal" accessibilityLabel={t('promotions.addPromotion')} onPress={openNew} />
       </View>
 
       {promotionsQuery.isLoading ? (
@@ -127,9 +129,9 @@ export default function PromotionsScreen() {
         <View className="flex-1 justify-center pb-16">
           <EmptyState
             icon={BadgePercent}
-            title="Run a promotion"
-            message="Create coupon codes and discounts to apply at checkout."
-            actionLabel="Add a promotion"
+            title={t('promotions.emptyTitle')}
+            message={t('promotions.emptyMsg')}
+            actionLabel={t('promotions.addPromotion')}
             onAction={openNew}
           />
         </View>
@@ -144,7 +146,7 @@ export default function PromotionsScreen() {
               >
                 <SwipeableRow
                   actions={[
-                    { icon: Trash2, label: 'Delete', tone: 'negative', onPress: () => confirmDelete(promo.id, promo.name) },
+                    { icon: Trash2, label: t('common.delete'), tone: 'negative', onPress: () => confirmDelete(promo.id, promo.name) },
                   ]}
                 >
                   <Card className="gap-3">
@@ -157,14 +159,18 @@ export default function PromotionsScreen() {
                           {promo.name}
                         </Text>
                         <Text variant="caption" tone="tertiary">
-                          {promotionSummary(promo)}
+                          {promo.type === 'percent'
+                            ? t('promotions.summaryPercent', { value: Math.round(promo.value * 100) })
+                            : promo.type === 'fixed'
+                              ? t('promotions.summaryFixed', { value: promo.value })
+                              : t('promotions.summaryBogo')}
                           {promo.code ? ` · code ${promo.code}` : ''}
                         </Text>
                       </View>
                       {promo.code ? <Badge label={promo.code} tone="accent" /> : null}
                     </View>
                     <SwitchRow
-                      label={live ? 'Active' : 'Inactive'}
+                      label={live ? t('promotions.active') : t('promotions.inactive')}
                       value={promo.active}
                       onChange={(active) => setActive.mutate({ id: promo.id, active })}
                     />
@@ -176,13 +182,13 @@ export default function PromotionsScreen() {
         </ScrollView>
       )}
 
-      <Sheet ref={editSheet} title="New promotion">
+      <Sheet ref={editSheet} title={t('promotions.newPromotion')}>
         <View className="gap-4">
-          <TextField label="Promotion name" value={name} onChangeText={setName} autoFocus />
-          <SegmentedControl options={TYPE_OPTIONS} value={type} onChange={setType} />
+          <TextField label={t('promotions.promotionName')} value={name} onChangeText={setName} autoFocus />
+          <SegmentedControl options={typeOptions} value={type} onChange={setType} />
           {type !== 'bogo' ? (
             <TextField
-              label={type === 'percent' ? 'Percent off' : 'Amount off'}
+              label={type === 'percent' ? t('promotions.percentOff') : t('promotions.amountOff')}
               prefix={type === 'fixed' ? symbol : undefined}
               value={value}
               onChangeText={(v) => setValue(v.replace(',', '.'))}
@@ -191,17 +197,17 @@ export default function PromotionsScreen() {
           ) : (
             <View className="rounded-md bg-surface-sunken p-4 dark:bg-surface">
               <Text variant="caption" tone="secondary">
-                Buy one, get one — applied as up to 50% off the matched set at checkout.
+                {t('promotions.bogoNote')}
               </Text>
             </View>
           )}
           <TextField
-            label="Coupon code (optional)"
+            label={t('promotions.couponCode')}
             value={code}
             onChangeText={(v) => setCode(v.toUpperCase())}
             autoCapitalize="characters"
           />
-          <Button label="Save promotion" size="lg" fullWidth loading={savePromotion.isPending} onPress={submit} />
+          <Button label={t('promotions.savePromotion')} size="lg" fullWidth loading={savePromotion.isPending} onPress={submit} />
         </View>
       </Sheet>
     </Screen>

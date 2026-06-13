@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Building2, ChevronRight, Plus, Truck } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -32,14 +33,15 @@ import type { PurchaseOrderStatus } from '@/types/models';
 
 type Tab = 'suppliers' | 'orders';
 
-const PO_BADGE: Record<PurchaseOrderStatus, { label: string; tone: 'positive' | 'caution' | 'neutral' | 'info' }> = {
-  draft: { label: 'Draft', tone: 'neutral' },
-  ordered: { label: 'Ordered', tone: 'info' },
-  received: { label: 'Received', tone: 'positive' },
-  cancelled: { label: 'Cancelled', tone: 'neutral' },
+const PO_BADGE: Record<PurchaseOrderStatus, { labelKey: string; tone: 'positive' | 'caution' | 'neutral' | 'info' }> = {
+  draft: { labelKey: 'suppliers.statusDraft', tone: 'neutral' },
+  ordered: { labelKey: 'suppliers.statusOrdered', tone: 'info' },
+  received: { labelKey: 'suppliers.statusReceived', tone: 'positive' },
+  cancelled: { labelKey: 'suppliers.statusCancelled', tone: 'neutral' },
 };
 
 export default function SuppliersScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { colors } = useTheme();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
@@ -57,18 +59,18 @@ export default function SuppliersScreen() {
 
   const suppliers = suppliersQuery.data ?? [];
   const purchaseOrders = poQuery.data ?? [];
-  const supplierName = (id: string) => suppliers.find((s) => s.id === id)?.name ?? 'Supplier';
+  const supplierName = (id: string) => suppliers.find((s) => s.id === id)?.name ?? t('suppliers.tabSuppliers');
 
   const submitSupplier = () => {
     if (name.trim().length < 2) {
-      toast.error('Name needed', 'Give the supplier a name.');
+      toast.error(t('suppliers.nameNeeded'), t('suppliers.nameNeededBody'));
       return;
     }
     saveSupplier.mutate(
       { name: name.trim(), contact: contact.trim() || null, notes: notes.trim() },
       {
         onSuccess: (s) => {
-          toast.success('Supplier added', s.name);
+          toast.success(t('suppliers.supplierAdded'), s.name);
           setName('');
           setContact('');
           setNotes('');
@@ -82,15 +84,15 @@ export default function SuppliersScreen() {
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
         <View className="flex-row items-center gap-3">
-          <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+          <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
           <Text variant="h1" weight="bold">
-            Suppliers
+            {t('suppliers.title')}
           </Text>
         </View>
         <IconButton
           icon={Plus}
           variant="tonal"
-          accessibilityLabel="Add supplier"
+          accessibilityLabel={t('suppliers.addSupplier')}
           onPress={() => supplierSheet.current?.present()}
         />
       </View>
@@ -98,8 +100,8 @@ export default function SuppliersScreen() {
       <View className="px-5 py-3">
         <SegmentedControl
           options={[
-            { label: 'Suppliers', value: 'suppliers' },
-            { label: 'Purchase orders', value: 'orders' },
+            { label: t('suppliers.tabSuppliers'), value: 'suppliers' },
+            { label: t('suppliers.tabOrders'), value: 'orders' },
           ]}
           value={tab}
           onChange={setTab}
@@ -117,9 +119,9 @@ export default function SuppliersScreen() {
           <View className="flex-1 justify-center pb-16">
             <EmptyState
               icon={Building2}
-              title="Add your suppliers"
-              message="Track who you buy from and create purchase orders that restock inventory."
-              actionLabel="Add a supplier"
+              title={t('suppliers.emptyTitle')}
+              message={t('suppliers.emptyMsg')}
+              actionLabel={t('suppliers.addSupplier')}
               onAction={() => supplierSheet.current?.present()}
             />
           </View>
@@ -164,8 +166,8 @@ export default function SuppliersScreen() {
         <View className="flex-1 justify-center pb-16">
           <EmptyState
             icon={Truck}
-            title="No purchase orders"
-            message="Open a supplier to create a purchase order. Receiving one restocks inventory automatically."
+            title={t('suppliers.noPos')}
+            message={t('suppliers.noPosMsg')}
           />
         </View>
       ) : (
@@ -185,10 +187,10 @@ export default function SuppliersScreen() {
                         {supplierName(po.supplierId)}
                       </Text>
                       <Text variant="caption" tone="tertiary">
-                        {units} units · {formatDayLabel(new Date(po.createdAt))}
+                        {t('suppliers.units', { count: units })} · {formatDayLabel(new Date(po.createdAt))}
                       </Text>
                     </View>
-                    <Badge label={badge.label} tone={badge.tone} dot={po.status === 'ordered'} />
+                    <Badge label={t(badge.labelKey)} tone={badge.tone} dot={po.status === 'ordered'} />
                   </View>
                   <View className="flex-row items-center justify-between">
                     <Text variant="title" weight="semibold" tabular>
@@ -196,12 +198,16 @@ export default function SuppliersScreen() {
                     </Text>
                     {po.status === 'ordered' ? (
                       <Button
-                        label="Receive stock"
+                        label={t('suppliers.receiveStock')}
                         size="sm"
                         loading={receivePo.isPending}
                         onPress={() =>
                           receivePo.mutate(po.id, {
-                            onSuccess: () => toast.success('Stock received', `${units} units added to inventory`),
+                            onSuccess: () =>
+                              toast.success(
+                                t('suppliers.stockReceived'),
+                                t('suppliers.unitsAdded', { count: units }),
+                              ),
                           })
                         }
                       />
@@ -214,13 +220,13 @@ export default function SuppliersScreen() {
         </ScrollView>
       )}
 
-      <Sheet ref={supplierSheet} title="New supplier">
+      <Sheet ref={supplierSheet} title={t('suppliers.addSupplier')}>
         <View className="gap-4">
-          <TextField label="Supplier name" value={name} onChangeText={setName} autoFocus />
-          <TextField label="Contact (phone, email)" value={contact} onChangeText={setContact} />
-          <TextField label="Notes" value={notes} onChangeText={setNotes} multiline />
+          <TextField label={t('suppliers.supplierName')} value={name} onChangeText={setName} autoFocus />
+          <TextField label={t('suppliers.contact')} value={contact} onChangeText={setContact} />
+          <TextField label={t('suppliers.notes')} value={notes} onChangeText={setNotes} multiline />
           <Button
-            label="Add supplier"
+            label={t('suppliers.addSupplier')}
             size="lg"
             fullWidth
             loading={saveSupplier.isPending}
