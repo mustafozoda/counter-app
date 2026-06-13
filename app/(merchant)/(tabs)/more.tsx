@@ -4,6 +4,7 @@ import {
   HandCoins,
   LogOut,
   Settings,
+  ShoppingBag,
   Tag,
   Truck,
   Users,
@@ -34,10 +35,10 @@ const MENU: MenuEntry[] = [
   { icon: Users, label: 'Customers', description: 'Profiles, history, loyalty', phase: 'Phase 3', href: '/customers' },
   { icon: Wallet, label: 'Finance', description: 'Revenue, expenses, profit', phase: 'Phase 4', href: '/finance' },
   { icon: HandCoins, label: 'Financing', description: 'Installments & layaway', phase: 'Phase 5', href: '/financing' },
-  { icon: Truck, label: 'Suppliers', description: 'Purchase orders & restocks', phase: 'Phase 6' },
-  { icon: Tag, label: 'Promotions', description: 'Coupons & discounts', phase: 'Phase 6' },
-  { icon: BarChart3, label: 'Reports', description: 'Best sellers, trends, exports', phase: 'Phase 6' },
-  { icon: Settings, label: 'Settings', description: 'Store, staff, receipts', phase: 'Phase 8' },
+  { icon: Truck, label: 'Suppliers', description: 'Purchase orders & restocks', phase: 'Phase 6', href: '/suppliers' },
+  { icon: Tag, label: 'Promotions', description: 'Coupons & discounts', phase: 'Phase 6', href: '/promotions' },
+  { icon: BarChart3, label: 'Reports', description: 'Best sellers, trends, exports', phase: 'Phase 6', href: '/reports' },
+  { icon: Settings, label: 'Settings', description: 'Store, staff, receipts', phase: 'Phase 8', href: '/settings' },
 ];
 
 const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
@@ -135,6 +136,27 @@ export default function MoreScreen() {
 
       <Animated.View entering={FadeInDown.delay(STAGGER_MS * 3).springify().damping(18)} className="mt-6">
         <PressableScale
+          onPress={() => router.push('/(storefront)/(tabs)')}
+          accessibilityRole="button"
+          className="flex-row items-center gap-3 rounded-md border border-hairline bg-surface px-4 py-3.5 dark:bg-surface-elevated"
+        >
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-tint">
+            <ShoppingBag size={18} color={colors.primary} strokeWidth={2} />
+          </View>
+          <View className="flex-1">
+            <Text variant="body" weight="medium">
+              Preview storefront
+            </Text>
+            <Text variant="caption" tone="tertiary">
+              See your shop the way customers do
+            </Text>
+          </View>
+          <ChevronRight size={18} color={colors.inkTertiary} strokeWidth={2} />
+        </PressableScale>
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(STAGGER_MS * 4).springify().damping(18)} className="mt-6">
+        <PressableScale
           onPress={confirmSignOut}
           accessibilityRole="button"
           className="h-12 flex-row items-center justify-center gap-2 rounded-md bg-negative-tint"
@@ -145,7 +167,7 @@ export default function MoreScreen() {
           </Text>
         </PressableScale>
         <Text variant="micro" tone="tertiary" className="mt-4 text-center">
-          Counter v0.1.0 · Phase 0
+          Counter v0.1.0
         </Text>
       </Animated.View>
     </Screen>

@@ -23,6 +23,13 @@ export default function MerchantLayout() {
       <Stack.Screen name="finance" />
       <Stack.Screen name="financing" />
       <Stack.Screen name="plan/[id]" />
+      <Stack.Screen name="suppliers" />
+      <Stack.Screen name="supplier/[id]" />
+      <Stack.Screen name="promotions" />
+      <Stack.Screen name="reports" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="staff" />
+      <Stack.Screen name="notifications" />
     </Stack>
   );
 }

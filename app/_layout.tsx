@@ -21,10 +21,12 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
+import { I18nManager } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { queryClient } from '@/api/query-client';
 import { ToastHost } from '@/components/ui';
+import { changeLanguage, deviceLanguage, initI18n, isRtlLanguage } from '@/i18n';
 import { useAuthStore } from '@/stores/auth';
 import { usePreferences } from '@/stores/preferences';
 import { useStoreProfile } from '@/stores/store-profile';
@@ -50,6 +52,7 @@ export default function RootLayout() {
   const store = useStoreProfile((s) => s.store);
   const storeHydrated = useStoreProfile((s) => s.hasHydrated);
   const themeMode = usePreferences((s) => s.themeMode);
+  const language = usePreferences((s) => s.language);
   const prefsHydrated = usePreferences((s) => s.hasHydrated);
 
   const { colorScheme, setColorScheme } = useColorScheme();
@@ -57,6 +60,22 @@ export default function RootLayout() {
   useEffect(() => {
     if (prefsHydrated) setColorScheme(themeMode);
   }, [prefsHydrated, themeMode, setColorScheme]);
+
+  // Initialize translations once preferences are known, and keep the active
+  // language + RTL layout direction in sync with the user's choice.
+  useEffect(() => {
+    if (!prefsHydrated) return;
+    const active = language ?? deviceLanguage();
+    initI18n(language);
+    changeLanguage(active);
+    const shouldRtl = isRtlLanguage(active);
+    if (I18nManager.isRTL !== shouldRtl) {
+      I18nManager.allowRTL(shouldRtl);
+      I18nManager.forceRTL(shouldRtl);
+      // A full RTL flip needs a reload to re-lay-out native views; new
+      // launches pick it up. We avoid forcing a reload mid-session here.
+    }
+  }, [prefsHydrated, language]);
 
   const ready = fontsLoaded && authHydrated && storeHydrated && prefsHydrated;
 
@@ -83,6 +102,7 @@ export default function RootLayout() {
               </Stack.Protected>
               <Stack.Protected guard={signedIn && onboarded}>
                 <Stack.Screen name="(merchant)" />
+                <Stack.Screen name="(storefront)" />
               </Stack.Protected>
             </Stack>
             <ToastHost />
