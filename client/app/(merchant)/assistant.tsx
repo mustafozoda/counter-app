@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, History, SquarePen } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, PressableScale, Text, useSheetRef } from '@/components/ui';
@@ -62,6 +62,16 @@ export default function AssistantScreen() {
   const activeId = useAssistantStore((s) => s.activeId);
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const messages = active?.messages ?? [];
+
+  // Keep the latest messages in view when the keyboard opens: the window
+  // resizes, so without this the bottom of the chat hides behind the keyboard.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const sub = Keyboard.addListener(showEvent, () => {
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    });
+    return () => sub.remove();
+  }, []);
 
   const send = (text: string) => {
     const store = useAssistantStore.getState();
