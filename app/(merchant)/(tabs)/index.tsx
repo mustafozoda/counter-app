@@ -33,7 +33,6 @@ import { lowStockProducts } from '@/features/products/filtering';
 import { useProducts } from '@/features/products/hooks';
 import { formatCompact } from '@/lib/format';
 import { useStoreProfile } from '@/stores/store-profile';
-import { toast } from '@/stores/toast';
 import { STAGGER_MS, useTheme } from '@/theme';
 
 function greetingKey(): string {
@@ -225,12 +224,7 @@ export default function HomeScreen() {
             </Card>
             <Card
               className="flex-1 gap-2"
-              onPress={() =>
-                toast.info(
-                  t('more.comingSoon', { feature: t('more.reports') }),
-                  t('more.comingSoonBody', { phase: 'Phase 6' }),
-                )
-              }
+              onPress={() => router.push('/reports')}
             >
               <View className="h-8 w-8 items-center justify-center rounded-full bg-positive-tint">
                 <Trophy size={16} color={colors.positive} strokeWidth={2} />
