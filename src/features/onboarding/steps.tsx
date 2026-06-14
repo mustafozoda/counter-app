@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ChevronDown, ImagePlus, Store, Tag } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import {
@@ -43,28 +44,30 @@ interface StepProps {
 }
 
 export function NameStep({ draft, patch }: StepProps) {
+  const { t } = useTranslation();
   return (
     <View className="gap-4">
       <TextField
-        label="Store name"
+        label={t('settings.storeName')}
         icon={Store}
         value={draft.name}
         onChangeText={(name) => patch({ name })}
         autoFocus
         returnKeyType="done"
-        helper="You can change this anytime in Settings."
+        helper={t('onboarding.storeNameHelper')}
       />
     </View>
   );
 }
 
 export function VerticalStep({ draft, patch }: StepProps) {
+  const { t } = useTranslation();
   return (
     <View className="flex-row flex-wrap gap-2.5">
       {STORE_VERTICALS.map((vertical) => (
         <Chip
           key={vertical.id}
-          label={vertical.label}
+          label={t(vertical.labelKey)}
           icon={vertical.icon}
           selected={draft.vertical === vertical.id}
           onPress={() => patch({ vertical: vertical.id })}
@@ -75,6 +78,7 @@ export function VerticalStep({ draft, patch }: StepProps) {
 }
 
 export function CurrencyStep({ draft, patch }: StepProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const sheetRef = useSheetRef();
   const selected = CURRENCIES.find((c) => c.code === draft.currencyCode);
@@ -85,7 +89,7 @@ export function CurrencyStep({ draft, patch }: StepProps) {
         scaleTo={0.98}
         onPress={() => sheetRef.current?.present()}
         accessibilityRole="button"
-        accessibilityLabel={`Currency: ${selected?.name ?? draft.currencyCode}. Tap to change.`}
+        accessibilityLabel={t('onboarding.currencyA11y', { name: selected?.name ?? draft.currencyCode })}
         className="h-16 flex-row items-center gap-3 rounded-md border border-hairline bg-surface px-4 dark:bg-surface-elevated"
       >
         <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-tint">
@@ -104,7 +108,7 @@ export function CurrencyStep({ draft, patch }: StepProps) {
         <ChevronDown size={20} color={colors.inkTertiary} strokeWidth={2} />
       </PressableScale>
       <Text variant="caption" tone="tertiary" className="px-1">
-        Every price, report and receipt uses this currency. Multi-currency support comes later.
+        {t('onboarding.currencyNote')}
       </Text>
 
       <CurrencySheet
@@ -117,6 +121,7 @@ export function CurrencyStep({ draft, patch }: StepProps) {
 }
 
 export function LogoStep({ draft, patch }: StepProps) {
+  const { t } = useTranslation();
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -136,44 +141,45 @@ export function LogoStep({ draft, patch }: StepProps) {
           style={{ width: 128, height: 128, borderRadius: 38 }}
           contentFit="cover"
           transition={200}
-          accessibilityLabel="Store logo preview"
+          accessibilityLabel={t('onboarding.logoPreview')}
         />
       ) : (
         <Logo size={128} letter={(draft.name.trim()[0] ?? 'C').toUpperCase()} />
       )}
       <Button
-        label={draft.logoUri ? 'Choose a different photo' : 'Choose a photo'}
+        label={draft.logoUri ? t('onboarding.choosePhotoChange') : t('onboarding.choosePhoto')}
         variant="secondary"
         icon={ImagePlus}
         onPress={pickImage}
       />
       <Text variant="caption" tone="tertiary" className="text-center">
-        No logo yet? The monogram above is yours until you add one.
+        {t('onboarding.logoNote')}
       </Text>
     </View>
   );
 }
 
 export function ProductStep({ draft, patch }: StepProps) {
+  const { t } = useTranslation();
   const spec = getCurrencySpec(draft.currencyCode);
 
   return (
     <View className="gap-4">
       <TextField
-        label="Product name"
+        label={t('product.productName')}
         icon={Tag}
         value={draft.productName}
         onChangeText={(productName) => patch({ productName })}
         returnKeyType="next"
       />
       <TextField
-        label="Selling price"
+        label={t('product.sellingPrice')}
         prefix={spec.symbol}
         value={draft.productPrice}
         onChangeText={(productPrice) => patch({ productPrice: productPrice.replace(',', '.') })}
         keyboardType="decimal-pad"
         returnKeyType="done"
-        helper="Just the essentials — photos, variants and stock come right after setup."
+        helper={t('onboarding.productHelper')}
       />
     </View>
   );

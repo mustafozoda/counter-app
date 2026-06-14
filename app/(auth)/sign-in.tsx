@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { Lock, Mail } from 'lucide-react-native';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Button, Logo, Screen, Text, TextField } from '@/components/ui';
@@ -12,6 +13,7 @@ import { toast } from '@/stores/toast';
 import { STAGGER_MS } from '@/theme';
 
 export default function SignInScreen() {
+  const { t } = useTranslation();
   const signIn = useAuthStore((s) => s.signIn);
 
   const {
@@ -28,7 +30,7 @@ export default function SignInScreen() {
       await signIn(values.email, values.password);
       haptics.success();
     } catch {
-      toast.error('Sign in failed', 'Check your details and try again.');
+      toast.error(t('auth.signInFailed'), t('auth.signInFailedBody'));
     }
   });
 
@@ -43,7 +45,7 @@ export default function SignInScreen() {
           Counter
         </Text>
         <Text variant="body" tone="secondary" className="mt-2 text-center">
-          Run your whole shop from your pocket.
+          {t('auth.tagline')}
         </Text>
       </Animated.View>
 
@@ -56,12 +58,12 @@ export default function SignInScreen() {
           name="email"
           render={({ field: { value, onChange, onBlur }, fieldState }) => (
             <TextField
-              label="Email"
+              label={t('auth.email')}
               icon={Mail}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={fieldState.error?.message}
+              error={fieldState.error?.message ? t(fieldState.error.message) : undefined}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
@@ -74,12 +76,12 @@ export default function SignInScreen() {
           name="password"
           render={({ field: { value, onChange, onBlur }, fieldState }) => (
             <TextField
-              label="Password"
+              label={t('auth.password')}
               icon={Lock}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={fieldState.error?.message}
+              error={fieldState.error?.message ? t(fieldState.error.message) : undefined}
               secureTextEntry
               autoComplete="password"
               returnKeyType="go"
@@ -90,12 +92,12 @@ export default function SignInScreen() {
 
         <Link href="/forgot-password" asChild>
           <Text variant="caption" weight="semibold" tone="accent" className="self-end px-1">
-            Forgot password?
+            {t('auth.forgotPassword')}
           </Text>
         </Link>
 
         <Button
-          label="Sign in"
+          label={t('auth.signIn')}
           size="lg"
           fullWidth
           loading={isSubmitting}
@@ -109,11 +111,11 @@ export default function SignInScreen() {
         className="mt-10 flex-row items-center justify-center gap-1"
       >
         <Text variant="body" tone="secondary">
-          New to Counter?
+          {t('auth.newToCounter')}
         </Text>
         <Link href="/sign-up" asChild>
           <Text variant="body" weight="semibold" tone="accent">
-            Create account
+            {t('auth.createAccount')}
           </Text>
         </Link>
       </Animated.View>

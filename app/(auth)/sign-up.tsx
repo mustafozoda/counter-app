@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useRouter } from 'expo-router';
 import { ArrowLeft, Lock, Mail, UserRound } from 'lucide-react-native';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -14,6 +15,7 @@ import { STAGGER_MS } from '@/theme';
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const signUp = useAuthStore((s) => s.signUp);
 
   const {
@@ -30,7 +32,7 @@ export default function SignUpScreen() {
       await signUp(values.name, values.email, values.password);
       haptics.success();
     } catch {
-      toast.error('Could not create account', 'Please try again.');
+      toast.error(t('auth.createFailed'), t('auth.tryAgain'));
     }
   });
 
@@ -39,17 +41,17 @@ export default function SignUpScreen() {
       <View className="mt-2 flex-row items-center">
         <IconButton
           icon={ArrowLeft}
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('auth.goBack')}
           onPress={() => router.back()}
         />
       </View>
 
       <Animated.View entering={FadeInDown.springify().damping(18)} className="mt-6">
         <Text variant="display" weight="bold">
-          Create your{'\n'}account
+          {t('auth.createTitle')}
         </Text>
         <Text variant="body" tone="secondary" className="mt-3">
-          Your store will be set up in under a minute.
+          {t('auth.createSubtitle')}
         </Text>
       </Animated.View>
 
@@ -62,12 +64,12 @@ export default function SignUpScreen() {
           name="name"
           render={({ field: { value, onChange, onBlur }, fieldState }) => (
             <TextField
-              label="Your name"
+              label={t('auth.yourName')}
               icon={UserRound}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={fieldState.error?.message}
+              error={fieldState.error?.message ? t(fieldState.error.message) : undefined}
               autoComplete="name"
               returnKeyType="next"
             />
@@ -78,12 +80,12 @@ export default function SignUpScreen() {
           name="email"
           render={({ field: { value, onChange, onBlur }, fieldState }) => (
             <TextField
-              label="Email"
+              label={t('auth.email')}
               icon={Mail}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={fieldState.error?.message}
+              error={fieldState.error?.message ? t(fieldState.error.message) : undefined}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
@@ -96,13 +98,13 @@ export default function SignUpScreen() {
           name="password"
           render={({ field: { value, onChange, onBlur }, fieldState }) => (
             <TextField
-              label="Password"
+              label={t('auth.password')}
               icon={Lock}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={fieldState.error?.message}
-              helper="At least 8 characters"
+              error={fieldState.error?.message ? t(fieldState.error.message) : undefined}
+              helper={t('auth.min8')}
               secureTextEntry
               autoComplete="new-password"
               returnKeyType="go"
@@ -112,7 +114,7 @@ export default function SignUpScreen() {
         />
 
         <Button
-          label="Create account"
+          label={t('auth.createAccount')}
           size="lg"
           fullWidth
           loading={isSubmitting}
@@ -123,11 +125,11 @@ export default function SignUpScreen() {
 
       <View className="mt-auto flex-row items-center justify-center gap-1 pt-8">
         <Text variant="body" tone="secondary">
-          Already have an account?
+          {t('auth.haveAccount')}
         </Text>
         <Link href="/sign-in" asChild>
           <Text variant="body" weight="semibold" tone="accent">
-            Sign in
+            {t('auth.signIn')}
           </Text>
         </Link>
       </View>
