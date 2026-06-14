@@ -163,7 +163,7 @@ export default function AssistantScreen() {
       </View>
 
       <KeyboardAvoidingView
-        className="flex-1"
+        className="flex-1 bg-background"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={insets.top + 44}
       >
@@ -184,7 +184,10 @@ export default function AssistantScreen() {
           </ScrollView>
         )}
 
-        <View style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }}>
+        <View
+          className="bg-background"
+          style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }}
+        >
           <Composer busy={busy} onSend={send} onStop={stop} />
         </View>
       </KeyboardAvoidingView>
