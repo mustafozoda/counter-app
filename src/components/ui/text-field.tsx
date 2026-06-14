@@ -1,7 +1,7 @@
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Eye, EyeOff, type LucideIcon } from 'lucide-react-native';
 import { forwardRef, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
+import { Platform, Pressable, TextInput, View, type TextInputProps } from 'react-native';
 import Animated, {
   interpolate,
   interpolateColor,
@@ -57,30 +57,31 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
-  // The native input is left uncontrolled (defaultValue + onChangeText) so its
-  // text buffer is never overwritten while you type. Feeding `value` back on
-  // every keystroke races with fast input and duplicates characters (worst on
-  // multiline inputs under the New Architecture). We only resync the buffer —
-  // by remounting it with a fresh key — when `value` changes from the outside
-  // while the field is NOT focused (a form reset, or loading a record to edit).
-  // A focused field is always the source of truth for its own text.
-  const lastValueRef = useRef(value ?? '');
-  const [syncKey, setSyncKey] = useState(0);
+  // Keep the latest onChangeText in a ref so handleChangeText is a stable
+  // function that never changes — preventing a new prop landing on the native
+  // TextInput every render (which can flush its text state on New Arch).
+  const onChangeTextRef = useRef(onChangeText);
+  onChangeTextRef.current = onChangeText;
 
+  // Track what we last told the native buffer so we can detect external changes.
+  const lastValueRef = useRef(value ?? '');
+
+  // When value changes from *outside* (form reset, loading a record to edit)
+  // push it into the native buffer directly via setNativeProps — no remount,
+  // no key change, no brief focus loss that would race with fast typing.
   useEffect(() => {
     const next = value ?? '';
     if (focused || next === lastValueRef.current) return;
     lastValueRef.current = next;
-    setSyncKey((key) => key + 1);
+    innerRef.current?.setNativeProps({ text: next });
   }, [value, focused]);
 
-  const handleChangeText = useCallback(
-    (text: string) => {
-      lastValueRef.current = text;
-      onChangeText?.(text);
-    },
-    [onChangeText],
-  );
+  // Stable handler: never recreates, so the native input never receives a new
+  // onChangeText prop mid-session. Reads the latest caller via ref.
+  const handleChangeText = useCallback((text: string) => {
+    lastValueRef.current = text;
+    onChangeTextRef.current?.(text);
+  }, []);
 
   const hasValue = (value?.length ?? 0) > 0;
   const floated = focused || hasValue;
@@ -132,6 +133,32 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       ? colors.primary
       : colors.inkTertiary;
 
+  // Shared props for both input variants.
+  const nativeInputProps = {
+    defaultValue: value,
+    onChangeText: handleChangeText,
+    onFocus: handleFocus,
+    onBlur: handleBlur,
+    secureTextEntry: secureTextEntry && !revealed,
+    multiline,
+    style: [
+      textStyle('body'),
+      { flex: 1, paddingTop: 14, paddingBottom: multiline ? 0 : 2, color: colors.ink },
+    ],
+    placeholderTextColor: colors.inkTertiary,
+    cursorColor: colors.primary,
+    selectionColor: colors.primary,
+    accessibilityLabel: label,
+    ...inputProps,
+  };
+
+  // Inside a Sheet on iOS: BottomSheetTextInput notifies gorhom about keyboard
+  // height so the sheet lifts interactively. On Android the OS already handles
+  // the pan via android_keyboardInputMode="adjustPan", so we skip the wrapper
+  // entirely — it's the main source of focus-loss re-renders that cause the
+  // text-duplication bug on the New Architecture.
+  const useBottomSheetInput = insideSheet && Platform.OS === 'ios';
+
   return (
     <View className={cn('gap-1.5', containerClassName)}>
       <Pressable accessible={false} onPress={() => innerRef.current?.focus()}>
@@ -171,49 +198,10 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
                   {prefix}
                 </Animated.Text>
               ) : null}
-              {/* Inside a Sheet we render gorhom's BottomSheetTextInput so the
-                  sheet lifts above the keyboard; styling lives in `style` (not
-                  className) so it applies identically to both input types. */}
-              {insideSheet ? (
-                <BottomSheetTextInput
-                  ref={setRefs as never}
-                  key={syncKey}
-                  defaultValue={value}
-                  onChangeText={handleChangeText}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                  secureTextEntry={secureTextEntry && !revealed}
-                  multiline={multiline}
-                  style={[
-                    textStyle('body'),
-                    { flex: 1, paddingTop: 14, paddingBottom: multiline ? 0 : 2, color: colors.ink },
-                  ]}
-                  placeholderTextColor={colors.inkTertiary}
-                  cursorColor={colors.primary}
-                  selectionColor={colors.primary}
-                  accessibilityLabel={label}
-                  {...inputProps}
-                />
+              {useBottomSheetInput ? (
+                <BottomSheetTextInput ref={setRefs as never} {...nativeInputProps} />
               ) : (
-                <TextInput
-                  ref={setRefs}
-                  key={syncKey}
-                  defaultValue={value}
-                  onChangeText={handleChangeText}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                  secureTextEntry={secureTextEntry && !revealed}
-                  multiline={multiline}
-                  style={[
-                    textStyle('body'),
-                    { flex: 1, paddingTop: 14, paddingBottom: multiline ? 0 : 2, color: colors.ink },
-                  ]}
-                  placeholderTextColor={colors.inkTertiary}
-                  cursorColor={colors.primary}
-                  selectionColor={colors.primary}
-                  accessibilityLabel={label}
-                  {...inputProps}
-                />
+                <TextInput ref={setRefs} {...nativeInputProps} />
               )}
             </View>
           </View>
