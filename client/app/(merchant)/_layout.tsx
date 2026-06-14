@@ -30,6 +30,7 @@ export default function MerchantLayout() {
       <Stack.Screen name="settings" />
       <Stack.Screen name="staff" />
       <Stack.Screen name="notifications" />
+      <Stack.Screen name="assistant" options={{ animation: 'slide_from_right' }} />
     </Stack>
   );
 }

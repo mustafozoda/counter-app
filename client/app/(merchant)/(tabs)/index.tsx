@@ -5,6 +5,7 @@ import {
   Bell,
   CalendarClock,
   PackageSearch,
+  Sparkles,
   Trophy,
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
@@ -96,6 +97,12 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
+          <IconButton
+            icon={Sparkles}
+            variant="tonal"
+            accessibilityLabel={t('assistant.title')}
+            onPress={() => router.push('/assistant')}
+          />
           <IconButton
             icon={Bell}
             accessibilityLabel={t('more.title')}
