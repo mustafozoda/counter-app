@@ -2,6 +2,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ChevronRight, UserRoundPlus, UsersRound } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -24,6 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CustomersScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const customersQuery = useCustomers();
   const [query, setQuery] = useState('');
@@ -38,14 +40,14 @@ export default function CustomersScreen() {
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-5 pt-2">
         <View className="flex-row items-center gap-3">
-          <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+          <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
           <View>
             <Text variant="h1" weight="bold">
-              Customers
+              {t('customers.title')}
             </Text>
             {customersQuery.data && customersQuery.data.length > 0 ? (
               <Text variant="caption" tone="tertiary">
-                {customersQuery.data.length} total
+                {t('customers.total', { count: customersQuery.data.length })}
               </Text>
             ) : null}
           </View>
@@ -53,13 +55,13 @@ export default function CustomersScreen() {
         <IconButton
           icon={UserRoundPlus}
           variant="tonal"
-          accessibilityLabel="Add customer"
+          accessibilityLabel={t('customers.addCustomer')}
           onPress={() => formSheet.current?.present()}
         />
       </View>
 
       <View className="px-5 py-3">
-        <SearchBar value={query} onChangeText={setQuery} placeholder="Name, phone, email or tag" />
+        <SearchBar value={query} onChangeText={setQuery} placeholder={t('customers.searchPlaceholder')} />
       </View>
 
       {customersQuery.isLoading ? (
@@ -72,13 +74,9 @@ export default function CustomersScreen() {
         <View className="flex-1 justify-center pb-20">
           <EmptyState
             icon={UsersRound}
-            title={query ? 'No matches' : 'Know your regulars'}
-            message={
-              query
-                ? 'Try a different search.'
-                : 'Add customers to track purchases, loyalty and payment plans.'
-            }
-            actionLabel={query ? 'Clear search' : 'Add a customer'}
+            title={query ? t('customers.noMatches') : t('customers.emptyTitle')}
+            message={query ? t('customers.tryDifferent') : t('customers.emptyMsg')}
+            actionLabel={query ? t('customers.clearSearch') : t('customers.addACustomer')}
             onAction={() => (query ? setQuery('') : formSheet.current?.present())}
           />
         </View>
@@ -104,7 +102,7 @@ export default function CustomersScreen() {
                     {item.name}
                   </Text>
                   <Text variant="caption" tone="tertiary" numberOfLines={1}>
-                    {[item.phone, item.email].filter(Boolean).join(' · ') || 'No contact info'}
+                    {[item.phone, item.email].filter(Boolean).join(' · ') || t('common.noContact')}
                   </Text>
                 </View>
                 {item.tags[0] ? <Badge label={item.tags[0]} tone="accent" /> : null}

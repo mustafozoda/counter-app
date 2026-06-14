@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Check, ShieldCheck, Trash2, UserPlus } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -20,7 +21,6 @@ import {
   useSheetRef,
 } from '@/components/ui';
 import {
-  PERMISSION_LABELS,
   ROLE_PERMISSIONS,
   useStaffStore,
   type Permission,
@@ -29,14 +29,23 @@ import { toast } from '@/stores/toast';
 import { useTheme } from '@/theme';
 import type { StaffRole } from '@/types/models';
 
-const ROLES: { value: StaffRole; label: string; tone: 'accent' | 'info' | 'neutral' }[] = [
-  { value: 'owner', label: 'Owner', tone: 'accent' },
-  { value: 'manager', label: 'Manager', tone: 'info' },
-  { value: 'cashier', label: 'Cashier', tone: 'neutral' },
+const ROLES: { value: StaffRole; labelKey: string; tone: 'accent' | 'info' | 'neutral' }[] = [
+  { value: 'owner', labelKey: 'roles.owner', tone: 'accent' },
+  { value: 'manager', labelKey: 'roles.manager', tone: 'info' },
+  { value: 'cashier', labelKey: 'roles.cashier', tone: 'neutral' },
 ];
+
+const PERMISSION_LABEL_KEY: Record<Permission, string> = {
+  sell: 'staff.permSell',
+  manage_inventory: 'staff.permInventory',
+  view_finance: 'staff.permFinance',
+  manage_staff: 'staff.permStaff',
+  manage_settings: 'staff.permSettings',
+};
 
 export default function StaffScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const members = useStaffStore((s) => s.members);
   const saveMember = useStaffStore((s) => s.saveMember);
@@ -58,39 +67,39 @@ export default function StaffScreen() {
 
   const submit = () => {
     if (name.trim().length < 2) {
-      toast.error('Name needed', 'Give the team member a name.');
+      toast.error(t('staff.nameNeeded'), t('staff.nameNeededBody'));
       return;
     }
     saveMember({ id: editingId ?? undefined, name: name.trim(), email: email.trim(), role });
-    toast.success(editingId ? 'Team member updated' : 'Team member added', name.trim());
+    toast.success(editingId ? t('staff.memberUpdated') : t('staff.memberAdded'), name.trim());
     sheet.current?.dismiss();
   };
 
   const confirmRemove = (id: string, label: string) =>
-    Alert.alert('Remove team member', `Remove "${label}" from staff?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeMember(id) },
+    Alert.alert(t('staff.removeMember'), t('staff.removeBody', { name: label }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('actions.remove'), style: 'destructive', onPress: () => removeMember(id) },
     ]);
 
   return (
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
         <View className="flex-row items-center gap-3">
-          <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+          <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
           <Text variant="h1" weight="bold">
-            Staff & roles
+            {t('staff.title')}
           </Text>
         </View>
-        <IconButton icon={UserPlus} variant="tonal" accessibilityLabel="Add team member" onPress={openNew} />
+        <IconButton icon={UserPlus} variant="tonal" accessibilityLabel={t('staff.addTeamMember')} onPress={openNew} />
       </View>
 
       {members.length === 0 ? (
         <View className="flex-1 justify-center pb-16">
           <EmptyState
             icon={ShieldCheck}
-            title="Build your team"
-            message="Add staff and assign roles. Each role grants a different set of permissions."
-            actionLabel="Add a team member"
+            title={t('staff.buildTeam')}
+            message={t('staff.buildMsg')}
+            actionLabel={t('staff.addAMember')}
             onAction={openNew}
           />
         </View>
@@ -104,7 +113,7 @@ export default function StaffScreen() {
                 entering={FadeInDown.delay(Math.min(index, 8) * 35).springify().damping(18)}
               >
                 <SwipeableRow
-                  actions={[{ icon: Trash2, label: 'Remove', tone: 'negative', onPress: () => confirmRemove(member.id, member.name) }]}
+                  actions={[{ icon: Trash2, label: t('actions.remove'), tone: 'negative', onPress: () => confirmRemove(member.id, member.name) }]}
                 >
                   <Card
                     padded={false}
@@ -123,10 +132,10 @@ export default function StaffScreen() {
                         {member.name}
                       </Text>
                       <Text variant="caption" tone="tertiary" numberOfLines={1}>
-                        {member.email || 'No email'}
+                        {member.email || t('staff.noEmail')}
                       </Text>
                     </View>
-                    <Badge label={roleMeta.label} tone={roleMeta.tone} />
+                    <Badge label={t(roleMeta.labelKey)} tone={roleMeta.tone} />
                   </Card>
                 </SwipeableRow>
               </Animated.View>
@@ -135,13 +144,13 @@ export default function StaffScreen() {
         </ScrollView>
       )}
 
-      <Sheet ref={sheet} title={editingId ? 'Edit team member' : 'New team member'}>
+      <Sheet ref={sheet} title={editingId ? t('staff.editTeamMember') : t('staff.newTeamMember')}>
         <View className="gap-4">
-          <TextField label="Name" value={name} onChangeText={setName} autoFocus={!editingId} />
-          <TextField label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <TextField label={t('staff.name')} value={name} onChangeText={setName} autoFocus={!editingId} />
+          <TextField label={t('staff.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
 
           <Text variant="caption" weight="medium" tone="tertiary" className="px-1">
-            ROLE
+            {t('staff.role')}
           </Text>
           <View className="gap-2">
             {ROLES.map((option) => {
@@ -158,7 +167,7 @@ export default function StaffScreen() {
                 >
                   <View className="flex-row items-center justify-between">
                     <Text variant="body" weight="semibold" tone={selected ? 'accent' : 'primary'}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </Text>
                     {selected ? <Check size={18} color={colors.primary} strokeWidth={2.5} /> : null}
                   </View>
@@ -166,7 +175,7 @@ export default function StaffScreen() {
                     {ROLE_PERMISSIONS[option.value].map((permission: Permission) => (
                       <View key={permission} className="rounded-full bg-surface-sunken px-2 py-0.5 dark:bg-surface">
                         <Text variant="micro" tone="secondary">
-                          {PERMISSION_LABELS[permission]}
+                          {t(PERMISSION_LABEL_KEY[permission])}
                         </Text>
                       </View>
                     ))}
@@ -176,7 +185,7 @@ export default function StaffScreen() {
             })}
           </View>
 
-          <Button label={editingId ? 'Save changes' : 'Add team member'} size="lg" fullWidth onPress={submit} />
+          <Button label={editingId ? t('common.saveChanges') : t('staff.addTeamMember')} size="lg" fullWidth onPress={submit} />
         </View>
       </Sheet>
     </Screen>

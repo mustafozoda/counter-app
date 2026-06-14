@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, ChevronRight, Pencil, ShoppingBag, Star, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -29,6 +30,7 @@ import { useTheme } from '@/theme';
 export default function CustomerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
@@ -65,22 +67,22 @@ export default function CustomerDetailScreen() {
     return (
       <Screen contentClassName="justify-center">
         <Text variant="h2" weight="semibold" className="text-center">
-          This customer no longer exists.
+          {t('customers.gone')}
         </Text>
       </Screen>
     );
   }
 
   const confirmDelete = () =>
-    Alert.alert('Delete customer', `Remove "${customer.name}"? Their orders are kept.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('customers.deleteCustomer'), t('customers.deleteBody', { name: customer.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () =>
           deleteCustomer.mutate(customer.id, {
             onSuccess: () => {
-              toast.success('Customer deleted', customer.name);
+              toast.success(t('customers.customerDeleted'), customer.name);
               router.back();
             },
           }),
@@ -90,13 +92,13 @@ export default function CustomerDetailScreen() {
   return (
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <View className="flex-row gap-2">
-          <IconButton icon={Trash2} accessibilityLabel="Delete customer" onPress={confirmDelete} />
+          <IconButton icon={Trash2} accessibilityLabel={t('customers.deleteCustomer')} onPress={confirmDelete} />
           <IconButton
             icon={Pencil}
             variant="tonal"
-            accessibilityLabel="Edit customer"
+            accessibilityLabel={t('customers.editCustomer')}
             onPress={() => editSheet.current?.present()}
           />
         </View>
@@ -109,7 +111,7 @@ export default function CustomerDetailScreen() {
             {customer.name}
           </Text>
           <Text variant="caption" tone="tertiary" className="mt-1">
-            {[customer.phone, customer.email].filter(Boolean).join(' · ') || 'No contact info'}
+            {[customer.phone, customer.email].filter(Boolean).join(' · ') || t('common.noContact')}
           </Text>
           {customer.tags.length > 0 ? (
             <View className="mt-3 flex-row flex-wrap justify-center gap-2">
@@ -123,13 +125,13 @@ export default function CustomerDetailScreen() {
         <Animated.View entering={FadeInDown.delay(60).springify().damping(18)} className="mt-6 flex-row gap-3">
           <Card className="flex-1 gap-1">
             <Text variant="caption" tone="secondary">
-              Total spent
+              {t('customers.totalSpent')}
             </Text>
             <CurrencyText amount={totalSpent} currency={currency} variant="h1" animated />
           </Card>
           <Card className="flex-1 gap-1">
             <Text variant="caption" tone="secondary">
-              Orders
+              {t('customers.orders')}
             </Text>
             <Text variant="h1" weight="bold" tabular>
               {orders.length}
@@ -139,7 +141,7 @@ export default function CustomerDetailScreen() {
             <View className="flex-row items-center gap-1">
               <Star size={12} color={colors.caution} strokeWidth={2.5} />
               <Text variant="caption" tone="secondary">
-                Points
+                {t('customers.points')}
               </Text>
             </View>
             <Text variant="h1" weight="bold" tabular>
@@ -152,7 +154,7 @@ export default function CustomerDetailScreen() {
           <Animated.View entering={FadeInDown.delay(90).springify().damping(18)} className="mt-3">
             <Card className="gap-1">
               <Text variant="caption" weight="medium" tone="tertiary">
-                NOTES
+                {t('customers.notes')}
               </Text>
               <Text variant="body" tone="secondary">
                 {customer.notes}
@@ -164,7 +166,7 @@ export default function CustomerDetailScreen() {
         {activePlans.length > 0 ? (
           <Animated.View entering={FadeInDown.delay(105).springify().damping(18)} className="mt-6 gap-3">
             <Text variant="h2" weight="semibold">
-              Active payment plans
+              {t('customers.activePlans')}
             </Text>
             {activePlans.map((plan) => {
               const progress = planProgress(plan);
@@ -177,12 +179,12 @@ export default function CustomerDetailScreen() {
                 >
                   <View className="flex-row items-center justify-between">
                     <Text variant="body" weight="semibold" tabular>
-                      {formatMoney(progress.outstanding, currency)} outstanding
+                      {t('customers.outstanding', { amount: formatMoney(progress.outstanding, currency) })}
                     </Text>
                     {progress.overdueCount > 0 ? (
-                      <Badge label="Overdue" tone="negative" dot />
+                      <Badge label={t('customers.overdue')} tone="negative" dot />
                     ) : (
-                      <Badge label={`${progress.paidCount}/${progress.totalCount} paid`} tone="accent" />
+                      <Badge label={t('customers.paidOf', { paid: progress.paidCount, total: progress.totalCount })} tone="accent" />
                     )}
                   </View>
                   <ProgressBar progress={progress.ratio} tone={progress.overdueCount > 0 ? 'caution' : 'primary'} />
@@ -194,13 +196,13 @@ export default function CustomerDetailScreen() {
 
         <Animated.View entering={FadeInDown.delay(120).springify().damping(18)} className="mt-6 gap-3">
           <Text variant="h2" weight="semibold">
-            Purchase history
+            {t('customers.purchaseHistory')}
           </Text>
           {orders.length === 0 ? (
             <Card className="items-center gap-2 py-8">
               <ShoppingBag size={24} color={colors.inkTertiary} strokeWidth={1.75} />
               <Text variant="caption" tone="tertiary">
-                No purchases yet — attach them to a sale at checkout.
+                {t('customers.noPurchases')}
               </Text>
             </Card>
           ) : (
@@ -218,8 +220,7 @@ export default function CustomerDetailScreen() {
                         {order.number}
                       </Text>
                       <Text variant="caption" tone="tertiary">
-                        {formatDayLabel(new Date(order.createdAt))} · {order.items.length} item
-                        {order.items.length === 1 ? '' : 's'}
+                        {formatDayLabel(new Date(order.createdAt))} · {t('orders.items', { count: order.items.length })}
                       </Text>
                     </View>
                     <Text variant="body" weight="semibold" tabular>

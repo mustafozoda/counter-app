@@ -1,5 +1,6 @@
 import { Plus, ScanBarcode, X } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
@@ -123,6 +124,7 @@ interface AttributeEditorProps {
 }
 
 function ValueInput({ onAdd, placeholder }: { onAdd: (value: string) => void; placeholder: string }) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [text, setText] = useState('');
 
@@ -150,7 +152,7 @@ function ValueInput({ onAdd, placeholder }: { onAdd: (value: string) => void; pl
         onPress={commit}
         hitSlop={8}
         accessibilityRole="button"
-        accessibilityLabel="Add value"
+        accessibilityLabel={t('product.addValue')}
         className="h-7 w-7 items-center justify-center rounded-full bg-primary-tint"
       >
         <Plus size={14} color={colors.primary} strokeWidth={2.5} />
@@ -161,6 +163,7 @@ function ValueInput({ onAdd, placeholder }: { onAdd: (value: string) => void; pl
 
 /** Define option groups (Size, Color…) whose combinations become variants. */
 export function AttributeEditor({ attributes, onChange, presets }: AttributeEditorProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const updateAttr = (index: number, patch: Partial<AttributeDef>) =>
@@ -187,7 +190,7 @@ export function AttributeEditor({ attributes, onChange, presets }: AttributeEdit
                   }}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel={`Remove ${attr.name}`}
+                  accessibilityLabel={t('product.removeAttr', { name: attr.name })}
                 >
                   <X size={16} color={colors.inkTertiary} strokeWidth={2} />
                 </Pressable>
@@ -205,7 +208,7 @@ export function AttributeEditor({ attributes, onChange, presets }: AttributeEdit
                   />
                 ))}
                 <ValueInput
-                  placeholder={`Add ${attr.name.toLowerCase()}`}
+                  placeholder={t('product.addAttrValue', { name: attr.name.toLowerCase() })}
                   onAdd={(value) => {
                     if (!attr.values.includes(value)) {
                       updateAttr(index, { values: [...attr.values, value] });
@@ -262,12 +265,13 @@ export function AttributeEditor({ attributes, onChange, presets }: AttributeEdit
 }
 
 function NewAttributeChip({ onAdd }: { onAdd: (name: string) => void }) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
 
   if (!editing) {
-    return <Chip icon={Plus} label="Custom attribute" onPress={() => setEditing(true)} />;
+    return <Chip icon={Plus} label={t('product.customAttribute')} onPress={() => setEditing(true)} />;
   }
 
   const commit = () => {
@@ -284,12 +288,12 @@ function NewAttributeChip({ onAdd }: { onAdd: (name: string) => void }) {
         onChangeText={setName}
         onSubmitEditing={commit}
         onBlur={commit}
-        placeholder="Attribute name"
+        placeholder={t('product.attributeName')}
         placeholderTextColor={colors.inkTertiary}
         autoFocus
         className="min-w-24 text-ink"
         style={[textStyle('caption'), { paddingVertical: 0 }]}
-        accessibilityLabel="New attribute name"
+        accessibilityLabel={t('product.attributeName')}
       />
     </View>
   );
@@ -354,6 +358,7 @@ function MatrixField({
 
 /** One editable card per variant combination. */
 export function VariantMatrix({ rows, onChange, currencySymbol, onScanBarcode }: VariantMatrixProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const patchRow = (signature: string, patch: Partial<VariantRow>) =>
@@ -374,20 +379,20 @@ export function VariantMatrix({ rows, onChange, currencySymbol, onScanBarcode }:
               </Text>
               {row.id ? (
                 <Text variant="micro" tone="tertiary">
-                  {row.stock} on hand
+                  {t('product.onHand', { count: Number(row.stock) })}
                 </Text>
               ) : null}
             </View>
             <View className="flex-row gap-2.5">
               <MatrixField
-                label="SKU"
+                label={t('product.sku')}
                 value={row.sku}
                 mono
                 onChangeText={(sku) => patchRow(row.signature, { sku })}
                 flex={1.3}
               />
               <MatrixField
-                label="Barcode"
+                label={t('product.barcode')}
                 value={row.barcode}
                 mono
                 onChangeText={(barcode) => patchRow(row.signature, { barcode })}
@@ -397,7 +402,7 @@ export function VariantMatrix({ rows, onChange, currencySymbol, onScanBarcode }:
                     onPress={() => onScanBarcode(row.signature)}
                     haptic="tap"
                     accessibilityRole="button"
-                    accessibilityLabel="Scan barcode"
+                    accessibilityLabel={t('product.scanBarcode')}
                     className="ml-1 h-7 w-7 items-center justify-center rounded-full bg-primary-tint"
                   >
                     <ScanBarcode size={14} color={colors.primary} strokeWidth={2} />
@@ -407,7 +412,7 @@ export function VariantMatrix({ rows, onChange, currencySymbol, onScanBarcode }:
             </View>
             <View className="flex-row gap-2.5">
               <MatrixField
-                label={`Price override (${currencySymbol})`}
+                label={t('product.priceOverrideSym', { symbol: currencySymbol })}
                 value={row.priceOverride}
                 keyboardType="decimal-pad"
                 onChangeText={(priceOverride) =>
@@ -415,14 +420,14 @@ export function VariantMatrix({ rows, onChange, currencySymbol, onScanBarcode }:
                 }
               />
               <MatrixField
-                label={row.id ? 'Stock (via adjustments)' : 'Opening stock'}
+                label={row.id ? t('product.stockViaAdjustments') : t('product.openingStock')}
                 value={row.stock}
                 keyboardType="number-pad"
                 editable={!row.id}
                 onChangeText={(stock) => patchRow(row.signature, { stock })}
               />
               <MatrixField
-                label="Low alert at"
+                label={t('product.lowAlertAt')}
                 value={row.threshold}
                 keyboardType="number-pad"
                 onChangeText={(threshold) => patchRow(row.signature, { threshold })}

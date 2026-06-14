@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, ChevronRight, ReceiptText, RotateCcw, UserRound } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -21,33 +22,33 @@ import {
 import { refundAmountFor } from '@/api/orders';
 import { useCustomer, useRefundOrder, useSetFulfillment } from '@/features/customers/hooks';
 import { useOrder } from '@/features/pos/hooks';
-import { PAYMENT_METHOD_LABELS } from '@/features/pos/receipt';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import { useTheme } from '@/theme';
 import type { FulfillmentStatus, PaymentStatus, RefundItem } from '@/types/models';
 
-const PAYMENT_BADGE: Record<PaymentStatus, { label: string; tone: 'positive' | 'caution' | 'negative' | 'info' }> = {
-  paid: { label: 'Paid', tone: 'positive' },
-  pending: { label: 'Payment pending', tone: 'caution' },
-  partial: { label: 'Partially refunded', tone: 'caution' },
-  refunded: { label: 'Refunded', tone: 'negative' },
+const PAYMENT_BADGE: Record<PaymentStatus, { labelKey: string; tone: 'positive' | 'caution' | 'negative' | 'info' }> = {
+  paid: { labelKey: 'orderDetail.paid', tone: 'positive' },
+  pending: { labelKey: 'orderDetail.paymentPending', tone: 'caution' },
+  partial: { labelKey: 'orderDetail.partiallyRefunded', tone: 'caution' },
+  refunded: { labelKey: 'orderDetail.refunded', tone: 'negative' },
 };
 
 const FULFILLMENT_FLOW: FulfillmentStatus[] = ['pending', 'fulfilled', 'shipped', 'completed'];
 
-const FULFILLMENT_LABEL: Record<FulfillmentStatus, string> = {
-  pending: 'Pending',
-  fulfilled: 'Fulfilled',
-  shipped: 'Shipped',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
+const FULFILLMENT_LABEL_KEY: Record<FulfillmentStatus, string> = {
+  pending: 'orderDetail.statusPending',
+  fulfilled: 'orderDetail.statusFulfilled',
+  shipped: 'orderDetail.statusShipped',
+  completed: 'orderDetail.statusCompleted',
+  cancelled: 'orderDetail.statusCancelled',
 };
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
@@ -78,7 +79,7 @@ export default function OrderDetailScreen() {
     return (
       <Screen contentClassName="justify-center">
         <Text variant="h2" weight="semibold" className="text-center">
-          This order no longer exists.
+          {t('orderDetail.gone')}
         </Text>
       </Screen>
     );
@@ -112,10 +113,10 @@ export default function OrderDetailScreen() {
       { orderId: order.id, items: selectedItems, restock, reason: reason.trim() || null },
       {
         onSuccess: () => {
-          toast.success('Refund recorded', formatMoney(refundPreview, currency));
+          toast.success(t('orderDetail.refundRecorded'), formatMoney(refundPreview, currency));
           refundSheet.current?.dismiss();
         },
-        onError: () => toast.error('Refund failed'),
+        onError: () => toast.error(t('orderDetail.refundFailed')),
       },
     );
   };
@@ -130,11 +131,11 @@ export default function OrderDetailScreen() {
   return (
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <IconButton
           icon={ReceiptText}
           variant="tonal"
-          accessibilityLabel="View receipt"
+          accessibilityLabel={t('orderDetail.viewReceipt')}
           onPress={() => router.push({ pathname: '/receipt/[id]', params: { id: order.id } })}
         />
       </View>
@@ -145,15 +146,15 @@ export default function OrderDetailScreen() {
             <Text variant="display" weight="bold" tabular>
               {order.number}
             </Text>
-            <Badge label={order.channel === 'pos' ? 'POS' : 'Online'} />
+            <Badge label={order.channel === 'pos' ? t('orderDetail.pos') : t('orderDetail.online')} />
           </View>
           <Text variant="caption" tone="tertiary" className="mt-1">
             {formatDateTime(new Date(order.createdAt))}
           </Text>
           <View className="mt-3 flex-row flex-wrap gap-2">
-            <Badge label={paymentBadge.label} tone={paymentBadge.tone} dot />
+            <Badge label={t(paymentBadge.labelKey)} tone={paymentBadge.tone} dot />
             <Badge
-              label={FULFILLMENT_LABEL[order.fulfillmentStatus]}
+              label={t(FULFILLMENT_LABEL_KEY[order.fulfillmentStatus])}
               tone={order.fulfillmentStatus === 'cancelled' ? 'negative' : order.fulfillmentStatus === 'completed' ? 'positive' : 'info'}
               dot
             />
@@ -181,22 +182,29 @@ export default function OrderDetailScreen() {
               </View>
               <View className="flex-row justify-between">
                 <Text variant="micro" tone="tertiary">
-                  {FULFILLMENT_LABEL[FULFILLMENT_FLOW[0]!]}
+                  {t(FULFILLMENT_LABEL_KEY[FULFILLMENT_FLOW[0]!])}
                 </Text>
                 <Text variant="micro" tone="tertiary">
-                  {FULFILLMENT_LABEL[FULFILLMENT_FLOW[FULFILLMENT_FLOW.length - 1]!]}
+                  {t(FULFILLMENT_LABEL_KEY[FULFILLMENT_FLOW[FULFILLMENT_FLOW.length - 1]!])}
                 </Text>
               </View>
               {nextStatus ? (
                 <Button
-                  label={`Mark ${FULFILLMENT_LABEL[nextStatus].toLowerCase()}`}
+                  label={t('orderDetail.markNext', { status: t(FULFILLMENT_LABEL_KEY[nextStatus]).toLowerCase() })}
                   variant="secondary"
                   fullWidth
                   loading={setFulfillment.isPending}
                   onPress={() =>
                     setFulfillment.mutate(
                       { orderId: order.id, status: nextStatus },
-                      { onSuccess: () => toast.success(`Order ${FULFILLMENT_LABEL[nextStatus].toLowerCase()}`) },
+                      {
+                        onSuccess: () =>
+                          toast.success(
+                            t('orderDetail.orderMarked', {
+                              status: t(FULFILLMENT_LABEL_KEY[nextStatus]).toLowerCase(),
+                            }),
+                          ),
+                      },
                     )
                   }
                 />
@@ -229,7 +237,7 @@ export default function OrderDetailScreen() {
                 <UserRound size={16} color={colors.inkTertiary} strokeWidth={2} />
               </View>
               <Text variant="body" tone="tertiary">
-                Walk-in customer
+                {t('orderDetail.walkIn')}
               </Text>
             </Card>
           )}
@@ -238,7 +246,7 @@ export default function OrderDetailScreen() {
         {/* Items */}
         <Animated.View entering={FadeInDown.delay(100).springify().damping(18)} className="mt-6 gap-3">
           <Text variant="h2" weight="semibold">
-            Items
+            {t('orderDetail.items')}
           </Text>
           <Card padded={false}>
             {order.items.map((item, index) => {
@@ -254,8 +262,8 @@ export default function OrderDetailScreen() {
                     </Text>
                     <Text variant="caption" tone="tertiary">
                       {item.variantLabel !== 'Default' ? `${item.variantLabel} · ` : ''}
-                      {formatMoney(item.unitPrice, currency)} each
-                      {refunded > 0 ? ` · ${refunded} refunded` : ''}
+                      {t('orderDetail.eachPrice', { price: formatMoney(item.unitPrice, currency) })}
+                      {refunded > 0 ? ` · ${t('orderDetail.refundedQty', { count: refunded })}` : ''}
                     </Text>
                   </View>
                   <Text variant="body" weight="semibold" tabular>
@@ -270,38 +278,38 @@ export default function OrderDetailScreen() {
         {/* Money */}
         <Animated.View entering={FadeInDown.delay(130).springify().damping(18)} className="mt-6 gap-3">
           <Text variant="h2" weight="semibold">
-            Payment
+            {t('orderDetail.payment')}
           </Text>
           <Card className="gap-2">
-            <Row label="Subtotal" value={formatMoney(order.subtotal, currency)} />
-            {order.discount > 0 ? <Row label="Discount" value={`-${formatMoney(order.discount, currency)}`} /> : null}
-            {order.tax > 0 ? <Row label="Tax" value={formatMoney(order.tax, currency)} /> : null}
+            <Row label={t('orderDetail.subtotal')} value={formatMoney(order.subtotal, currency)} />
+            {order.discount > 0 ? <Row label={t('orderDetail.discount')} value={`-${formatMoney(order.discount, currency)}`} /> : null}
+            {order.tax > 0 ? <Row label={t('orderDetail.tax')} value={formatMoney(order.tax, currency)} /> : null}
             <View className="my-1 h-px bg-hairline" />
-            <Row label="Total" value={formatMoney(order.total, currency)} strong />
+            <Row label={t('orderDetail.total')} value={formatMoney(order.total, currency)} strong />
             {order.payments.map((p) => (
               <Row
                 key={p.id}
-                label={p.ref ? `${PAYMENT_METHOD_LABELS[p.method]} · ${p.ref}` : PAYMENT_METHOD_LABELS[p.method]}
+                label={p.ref ? `${t(`payment.${p.method}`)} · ${p.ref}` : t(`payment.${p.method}`)}
                 value={formatMoney(p.amount, currency)}
               />
             ))}
             {order.refunds.map((r) => (
               <Row
                 key={r.id}
-                label={`Refund${r.reason ? ` — ${r.reason}` : ''}${r.restocked ? ' (restocked)' : ''}`}
+                label={`${r.reason ? t('orderDetail.refundReason', { reason: r.reason }) : t('orderDetail.refund')}${r.restocked ? ` (${t('orderDetail.restocked')})` : ''}`}
                 value={`-${formatMoney(r.amount, currency)}`}
                 tone="negative"
               />
             ))}
           </Card>
           {canRefund ? (
-            <Button label="Refund items" variant="destructive" icon={RotateCcw} fullWidth onPress={openRefund} />
+            <Button label={t('orderDetail.refundItems')} variant="destructive" icon={RotateCcw} fullWidth onPress={openRefund} />
           ) : null}
         </Animated.View>
       </ScrollView>
 
       {/* Refund sheet */}
-      <Sheet ref={refundSheet} title="Refund items">
+      <Sheet ref={refundSheet} title={t('orderDetail.refundItems')}>
         <View className="gap-4">
           {refundableItems.map((item) => {
             const max = item.qty - (refundedQtyByItem.get(item.id) ?? 0);
@@ -312,7 +320,7 @@ export default function OrderDetailScreen() {
                     {item.productName}
                   </Text>
                   <Text variant="caption" tone="tertiary">
-                    {item.variantLabel !== 'Default' ? `${item.variantLabel} · ` : ''}up to {max}
+                    {item.variantLabel !== 'Default' ? `${item.variantLabel} · ` : ''}{t('orderDetail.upTo', { max })}
                   </Text>
                 </View>
                 <QuantityStepper
@@ -325,14 +333,14 @@ export default function OrderDetailScreen() {
             );
           })}
           <SwitchRow
-            label="Return to stock"
-            caption="Adds the items back through the movement ledger"
+            label={t('orderDetail.returnToStock')}
+            caption={t('orderDetail.returnToStockCaption')}
             value={restock}
             onChange={setRestock}
           />
-          <TextField label="Reason (optional)" value={reason} onChangeText={setReason} />
+          <TextField label={t('orderDetail.reasonOptional')} value={reason} onChangeText={setReason} />
           <Button
-            label={refundPreview > 0 ? `Refund ${formatMoney(refundPreview, currency)}` : 'Refund'}
+            label={refundPreview > 0 ? t('orderDetail.refundAmount', { amount: formatMoney(refundPreview, currency) }) : t('orderDetail.refund')}
             variant="destructive"
             size="lg"
             fullWidth
