@@ -1,5 +1,6 @@
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Eye, EyeOff, type LucideIcon } from 'lucide-react-native';
-import { forwardRef, useCallback, useRef, useState } from 'react';
+import { forwardRef, useCallback, useContext, useRef, useState } from 'react';
 import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 import Animated, {
   interpolate,
@@ -15,6 +16,7 @@ import Animated, {
 import { cn } from '@/lib/cn';
 import { springs, textStyle, useTheme } from '@/theme';
 
+import { InsideSheetContext } from './sheet-context';
 import { Text } from './text';
 
 export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
@@ -49,6 +51,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   forwardedRef,
 ) {
   const { colors } = useTheme();
+  const insideSheet = useContext(InsideSheetContext);
   const innerRef = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
@@ -142,21 +145,46 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
                   {prefix}
                 </Animated.Text>
               ) : null}
-              <TextInput
-                ref={setRefs}
-                value={value}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
-                secureTextEntry={secureTextEntry && !revealed}
-                multiline={multiline}
-                className="flex-1 pt-3.5 text-ink"
-                style={[textStyle('body'), { paddingBottom: multiline ? 0 : 2 }]}
-                placeholderTextColor={colors.inkTertiary}
-                cursorColor={colors.primary}
-                selectionColor={colors.primary}
-                accessibilityLabel={label}
-                {...inputProps}
-              />
+              {/* Inside a Sheet we render gorhom's BottomSheetTextInput so the
+                  sheet lifts above the keyboard; styling lives in `style` (not
+                  className) so it applies identically to both input types. */}
+              {insideSheet ? (
+                <BottomSheetTextInput
+                  ref={setRefs as never}
+                  value={value}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                  secureTextEntry={secureTextEntry && !revealed}
+                  multiline={multiline}
+                  style={[
+                    textStyle('body'),
+                    { flex: 1, paddingTop: 14, paddingBottom: multiline ? 0 : 2, color: colors.ink },
+                  ]}
+                  placeholderTextColor={colors.inkTertiary}
+                  cursorColor={colors.primary}
+                  selectionColor={colors.primary}
+                  accessibilityLabel={label}
+                  {...inputProps}
+                />
+              ) : (
+                <TextInput
+                  ref={setRefs}
+                  value={value}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                  secureTextEntry={secureTextEntry && !revealed}
+                  multiline={multiline}
+                  style={[
+                    textStyle('body'),
+                    { flex: 1, paddingTop: 14, paddingBottom: multiline ? 0 : 2, color: colors.ink },
+                  ]}
+                  placeholderTextColor={colors.inkTertiary}
+                  cursorColor={colors.primary}
+                  selectionColor={colors.primary}
+                  accessibilityLabel={label}
+                  {...inputProps}
+                />
+              )}
             </View>
           </View>
 

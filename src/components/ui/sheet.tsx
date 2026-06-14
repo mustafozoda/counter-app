@@ -9,6 +9,7 @@ import { View } from 'react-native';
 
 import { radius, useTheme } from '@/theme';
 
+import { InsideSheetContext } from './sheet-context';
 import { Text } from './text';
 
 export type SheetRef = BottomSheetModal;
@@ -71,20 +72,23 @@ export const Sheet = forwardRef<BottomSheetModal, SheetProps>(function Sheet(
         borderRadius: radius['2xl'],
       }}
       handleIndicatorStyle={{ backgroundColor: colors.inkTertiary, width: 40, height: 4 }}
+      keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
     >
-      {raw ? (
-        <>
-          {header}
-          {children}
-        </>
-      ) : (
-        <BottomSheetView>
-          {header}
-          <View className="px-5 pb-10 pt-2">{children}</View>
-        </BottomSheetView>
-      )}
+      <InsideSheetContext.Provider value={true}>
+        {raw ? (
+          <>
+            {header}
+            {children}
+          </>
+        ) : (
+          <BottomSheetView>
+            {header}
+            <View className="px-5 pb-10 pt-2">{children}</View>
+          </BottomSheetView>
+        )}
+      </InsideSheetContext.Provider>
     </BottomSheetModal>
   );
 });

@@ -46,7 +46,10 @@ export function CashflowBars({ data, height = 140 }: CashflowBarsProps) {
                   <Animated.View
                     entering={FadeInDown.delay(index * 30 + 60).springify().damping(16)}
                     className="w-[30%] max-w-3 rounded-full"
-                    style={{ height: outH, backgroundColor: colors.negative, opacity: 0.75 }}
+                    // Dim the out-bar via color alpha (BF ≈ 75%) rather than an
+                    // `opacity` style — `opacity` would clash with FadeInDown's
+                    // own opacity animation (Reanimated warns + overwrites it).
+                    style={{ height: outH, backgroundColor: `${colors.negative}BF` }}
                   />
                 </View>
                 <Text variant="micro" tone="tertiary" numberOfLines={1}>
