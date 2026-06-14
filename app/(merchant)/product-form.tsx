@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, ChevronDown } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import { z } from 'zod';
 
@@ -41,25 +42,14 @@ import { useTheme } from '@/theme';
 
 const numeric = (v: string) => Number.parseFloat(v.replace(',', '.'));
 
-const formSchema = z.object({
-  name: z.string().trim().min(2, 'Give the product a name'),
-  brand: z.string(),
-  description: z.string(),
-  price: z
-    .string()
-    .refine((v) => Number.isFinite(numeric(v)) && numeric(v) > 0, 'Enter a selling price'),
-  cost: z
-    .string()
-    .refine((v) => v.trim() === '' || (Number.isFinite(numeric(v)) && numeric(v) >= 0), 'Invalid cost'),
-  taxRate: z
-    .string()
-    .refine(
-      (v) => v.trim() === '' || (Number.isFinite(numeric(v)) && numeric(v) >= 0 && numeric(v) <= 100),
-      'Between 0 and 100',
-    ),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+interface FormValues {
+  name: string;
+  brand: string;
+  description: string;
+  price: string;
+  cost: string;
+  taxRate: string;
+}
 
 function defaultRow(name: string): VariantRow {
   return {
@@ -85,6 +75,7 @@ export default function ProductFormScreen() {
   const params = useLocalSearchParams<{ id?: string; barcode?: string }>();
   const editingId = params.id;
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const store = useStoreProfile((s) => s.store);
@@ -97,6 +88,28 @@ export default function ProductFormScreen() {
   const categories = useCategories().data ?? [];
   const save = useSaveProduct();
   const setScanRequest = useScannerStore((s) => s.setRequest);
+
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        name: z.string().trim().min(2, t('product.validName')),
+        brand: z.string(),
+        description: z.string(),
+        price: z
+          .string()
+          .refine((v) => Number.isFinite(numeric(v)) && numeric(v) > 0, t('product.validPrice')),
+        cost: z
+          .string()
+          .refine((v) => v.trim() === '' || (Number.isFinite(numeric(v)) && numeric(v) >= 0), t('product.invalidCost')),
+        taxRate: z
+          .string()
+          .refine(
+            (v) => v.trim() === '' || (Number.isFinite(numeric(v)) && numeric(v) >= 0 && numeric(v) <= 100),
+            t('product.taxRange'),
+          ),
+      }),
+    [t],
+  );
 
   const { control, handleSubmit, watch, reset } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -177,21 +190,21 @@ export default function ProductFormScreen() {
 
   const onSubmit = handleSubmit((values) => {
     if (rows.length === 0) {
-      toast.error('No variants', 'Add at least one variant value.');
+      toast.error(t('product.noVariants'), t('product.addVariantValue'));
       return;
     }
     const skus = rows.map((r) => r.sku.trim());
     if (skus.some((s) => s === '')) {
-      toast.error('Missing SKU', 'Every variant needs a SKU.');
+      toast.error(t('product.missingSku'), t('product.everyVariantSku'));
       return;
     }
     if (new Set(skus).size !== skus.length) {
-      toast.error('Duplicate SKUs', 'Variant SKUs must be unique.');
+      toast.error(t('product.dupSku'), t('product.dupSkuBody'));
       return;
     }
     const barcodes = rows.map((r) => r.barcode.trim()).filter((b) => b !== '');
     if (new Set(barcodes).size !== barcodes.length) {
-      toast.error('Duplicate barcodes', 'Two variants share the same barcode.');
+      toast.error(t('product.dupBarcode'), t('product.dupBarcodeBody'));
       return;
     }
 
@@ -228,10 +241,10 @@ export default function ProductFormScreen() {
       { id: editingId, input },
       {
         onSuccess: () => {
-          toast.success(editingId ? 'Product updated' : 'Product added', input.name);
+          toast.success(editingId ? t('product.productUpdated') : t('product.productAdded'), input.name);
           router.back();
         },
-        onError: () => toast.error('Could not save product'),
+        onError: () => toast.error(t('product.couldNotSave')),
       },
     );
   });
@@ -255,9 +268,9 @@ export default function ProductFormScreen() {
   return (
     <Screen padded={false} keyboardAvoid>
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <Text variant="title" weight="semibold">
-          {editingId ? 'Edit product' : 'New product'}
+          {editingId ? t('product.editProduct') : t('product.newProduct')}
         </Text>
         <View className="w-11" />
       </View>
@@ -268,17 +281,17 @@ export default function ProductFormScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <SectionTitle>Photos</SectionTitle>
+        <SectionTitle>{t('product.photos')}</SectionTitle>
         <ImagePickerGrid images={images} onChange={setImages} />
 
-        <SectionTitle>Basics</SectionTitle>
+        <SectionTitle>{t('product.basics')}</SectionTitle>
         <View className="gap-4">
           <Controller
             control={control}
             name="name"
             render={({ field: { value, onChange, onBlur }, fieldState }) => (
               <TextField
-                label="Product name"
+                label={t('product.productName')}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -290,7 +303,7 @@ export default function ProductFormScreen() {
             control={control}
             name="brand"
             render={({ field: { value, onChange, onBlur } }) => (
-              <TextField label="Brand (optional)" value={value} onChangeText={onChange} onBlur={onBlur} />
+              <TextField label={t('product.brandOptional')} value={value} onChangeText={onChange} onBlur={onBlur} />
             )}
           />
           <Controller
@@ -298,7 +311,7 @@ export default function ProductFormScreen() {
             name="description"
             render={({ field: { value, onChange, onBlur } }) => (
               <TextField
-                label="Description (optional)"
+                label={t('product.descriptionOptional')}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -310,22 +323,22 @@ export default function ProductFormScreen() {
             scaleTo={0.98}
             onPress={() => categorySheet.current?.present()}
             accessibilityRole="button"
-            accessibilityLabel={`Category: ${selectedCategory?.name ?? 'none'}`}
+            accessibilityLabel={t('product.categoryA11y', { name: selectedCategory?.name ?? t('product.noCategory') })}
             className="h-14 flex-row items-center justify-between rounded-md border border-hairline bg-surface px-4 dark:bg-surface-elevated"
           >
             <View>
               <Text variant="micro" weight="medium" tone="tertiary">
-                CATEGORY
+                {t('product.category')}
               </Text>
               <Text variant="body" weight={selectedCategory ? 'medium' : 'regular'} tone={selectedCategory ? 'primary' : 'tertiary'}>
-                {selectedCategory?.name ?? 'No category'}
+                {selectedCategory?.name ?? t('product.noCategory')}
               </Text>
             </View>
             <ChevronDown size={20} color={colors.inkTertiary} strokeWidth={2} />
           </PressableScale>
         </View>
 
-        <SectionTitle>Pricing</SectionTitle>
+        <SectionTitle>{t('product.pricing')}</SectionTitle>
         <View className="gap-4">
           <View className="flex-row gap-3">
             <Controller
@@ -333,7 +346,7 @@ export default function ProductFormScreen() {
               name="price"
               render={({ field: { value, onChange, onBlur }, fieldState }) => (
                 <TextField
-                  label="Selling price"
+                  label={t('product.sellingPrice')}
                   prefix={currencySymbol}
                   value={value}
                   onChangeText={(v) => onChange(v.replace(',', '.'))}
@@ -349,7 +362,7 @@ export default function ProductFormScreen() {
               name="cost"
               render={({ field: { value, onChange, onBlur }, fieldState }) => (
                 <TextField
-                  label="Cost (optional)"
+                  label={t('product.costOptional')}
                   prefix={currencySymbol}
                   value={value}
                   onChangeText={(v) => onChange(v.replace(',', '.'))}
@@ -364,8 +377,8 @@ export default function ProductFormScreen() {
           {margin !== null && (watchedCost ?? '').trim() !== '' ? (
             <Text variant="caption" tone={margin >= 0 ? 'positive' : 'negative'} className="px-1" tabular>
               {margin >= 0
-                ? `${formatPercentDelta(margin).replace('+', '')} margin on every sale`
-                : 'Selling below cost'}
+                ? t('product.marginEverySale', { percent: formatPercentDelta(margin).replace('+', '') })
+                : t('product.sellingBelowCost')}
             </Text>
           ) : null}
           <Controller
@@ -373,23 +386,23 @@ export default function ProductFormScreen() {
             name="taxRate"
             render={({ field: { value, onChange, onBlur }, fieldState }) => (
               <TextField
-                label="Tax rate % (optional override)"
+                label={t('product.taxOverride')}
                 value={value}
                 onChangeText={(v) => onChange(v.replace(',', '.'))}
                 onBlur={onBlur}
                 error={fieldState.error?.message}
                 keyboardType="decimal-pad"
-                helper="Leave empty to use the store default."
+                helper={t('product.taxHelper')}
               />
             )}
           />
         </View>
 
-        <SectionTitle>Inventory & variants</SectionTitle>
+        <SectionTitle>{t('product.inventoryVariants')}</SectionTitle>
         <View className="gap-4">
           <SwitchRow
-            label="This product has variants"
-            caption="Sizes, colors or any options you define"
+            label={t('product.hasVariants')}
+            caption={t('product.variantsCaption')}
             value={hasVariants}
             onChange={toggleVariants}
           />
@@ -398,8 +411,7 @@ export default function ProductFormScreen() {
           ) : null}
           {truncated ? (
             <Text variant="caption" tone="caution" className="px-1">
-              Showing the first {MAX_COMBINATIONS} combinations — trim attribute values to keep
-              things manageable.
+              {t('product.truncated', { max: MAX_COMBINATIONS })}
             </Text>
           ) : null}
           <VariantMatrix
@@ -412,13 +424,13 @@ export default function ProductFormScreen() {
 
         <View className="mt-8 gap-4">
           <SwitchRow
-            label="Save as draft"
-            caption="Drafts stay out of the POS and storefront"
+            label={t('product.saveAsDraft')}
+            caption={t('product.draftCaption')}
             value={isDraft}
             onChange={setIsDraft}
           />
           <Button
-            label={editingId ? 'Save changes' : 'Add product'}
+            label={editingId ? t('common.saveChanges') : t('product.addProductBtn')}
             size="lg"
             fullWidth
             loading={save.isPending}
@@ -431,7 +443,7 @@ export default function ProductFormScreen() {
         ref={categorySheet}
         categories={categories}
         selected={categoryId}
-        nullLabel="No category"
+        nullLabel={t('product.noCategory')}
         onSelect={setCategoryId}
         dismiss={() => categorySheet.current?.dismiss()}
       />

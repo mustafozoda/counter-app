@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { Button, Chip, Sheet, TextField, type SheetRef } from '@/components/ui';
@@ -18,6 +19,7 @@ export interface CustomerFormSheetProps {
 
 export const CustomerFormSheet = forwardRef<SheetRef, CustomerFormSheetProps>(
   function CustomerFormSheet({ customer, onSaved, dismiss }, ref) {
+    const { t } = useTranslation();
     const save = useSaveCustomer();
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
@@ -35,7 +37,7 @@ export const CustomerFormSheet = forwardRef<SheetRef, CustomerFormSheetProps>(
 
     const submit = () => {
       if (name.trim().length < 2) {
-        toast.error('Name needed', 'Give the customer a name.');
+        toast.error(t('customers.nameNeeded'), t('customers.nameNeededBody'));
         return;
       }
       save.mutate(
@@ -49,7 +51,7 @@ export const CustomerFormSheet = forwardRef<SheetRef, CustomerFormSheetProps>(
         },
         {
           onSuccess: (saved) => {
-            toast.success(customer ? 'Customer updated' : 'Customer added', saved.name);
+            toast.success(customer ? t('customers.customerUpdated') : t('customers.customerAdded'), saved.name);
             onSaved?.(saved);
             dismiss();
           },
@@ -58,12 +60,12 @@ export const CustomerFormSheet = forwardRef<SheetRef, CustomerFormSheetProps>(
     };
 
     return (
-      <Sheet ref={ref} title={customer ? 'Edit customer' : 'New customer'}>
+      <Sheet ref={ref} title={customer ? t('customers.editCustomer') : t('customers.newCustomer')}>
         <View className="gap-4">
-          <TextField label="Full name" value={name} onChangeText={setName} autoFocus={!customer} />
-          <TextField label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          <TextField label={t('customers.fullName')} value={name} onChangeText={setName} autoFocus={!customer} />
+          <TextField label={t('customers.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           <TextField
-            label="Email"
+            label={t('customers.email')}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -77,15 +79,15 @@ export const CustomerFormSheet = forwardRef<SheetRef, CustomerFormSheetProps>(
                 selected={tags.includes(tag)}
                 onPress={() =>
                   setTags((prev) =>
-                    prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+                    prev.includes(tag) ? prev.filter((x) => x !== tag) : [...prev, tag],
                   )
                 }
               />
             ))}
           </View>
-          <TextField label="Notes" value={notes} onChangeText={setNotes} multiline />
+          <TextField label={t('common.notes')} value={notes} onChangeText={setNotes} multiline />
           <Button
-            label={customer ? 'Save changes' : 'Add customer'}
+            label={customer ? t('common.saveChanges') : t('customers.addCustomer')}
             size="lg"
             fullWidth
             loading={save.isPending}

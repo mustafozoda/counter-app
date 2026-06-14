@@ -12,6 +12,7 @@ import {
   Undo2,
 } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -49,17 +50,18 @@ import type { ProductVariant, StockMovement } from '@/types/models';
 
 const MOVEMENT_META: Record<
   StockMovement['type'],
-  { label: string; icon: typeof ArrowDownLeft }
+  { labelKey: string; icon: typeof ArrowDownLeft }
 > = {
-  restock: { label: 'Restock', icon: ArrowDownLeft },
-  sale: { label: 'Sale', icon: ArrowUpRight },
-  adjustment: { label: 'Adjustment', icon: RotateCcw },
-  return: { label: 'Return', icon: Undo2 },
+  restock: { labelKey: 'product.movementRestock', icon: ArrowDownLeft },
+  sale: { labelKey: 'product.movementSale', icon: ArrowUpRight },
+  adjustment: { labelKey: 'product.movementAdjustment', icon: RotateCcw },
+  return: { labelKey: 'product.movementReturn', icon: Undo2 },
 };
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
@@ -91,7 +93,7 @@ export default function ProductDetailScreen() {
     return (
       <Screen contentClassName="justify-center">
         <Text variant="h2" weight="semibold" className="text-center">
-          This product no longer exists.
+          {t('product.gone')}
         </Text>
       </Screen>
     );
@@ -104,15 +106,15 @@ export default function ProductDetailScreen() {
   const archived = product.status === 'archived';
 
   const confirmDelete = () => {
-    Alert.alert('Delete product', `"${product.name}" and its stock history will be removed.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('product.deleteProduct'), t('product.deleteBody', { name: product.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () =>
           deleteProduct.mutate(product.id, {
             onSuccess: () => {
-              toast.success('Product deleted', product.name);
+              toast.success(t('product.productDeleted'), product.name);
               router.back();
             },
           }),
@@ -125,7 +127,7 @@ export default function ProductDetailScreen() {
       { id: product.id, status: archived ? 'active' : 'archived' },
       {
         onSuccess: () =>
-          toast.success(archived ? 'Product restored' : 'Product archived', product.name),
+          toast.success(archived ? t('product.productRestored') : t('product.productArchived'), product.name),
       },
     );
 
@@ -137,18 +139,18 @@ export default function ProductDetailScreen() {
   return (
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <View className="flex-row gap-2">
           <IconButton
             icon={archived ? ArchiveRestore : Archive}
-            accessibilityLabel={archived ? 'Restore product' : 'Archive product'}
+            accessibilityLabel={archived ? t('product.restoreProduct') : t('product.archiveProduct')}
             onPress={toggleArchive}
           />
-          <IconButton icon={Trash2} accessibilityLabel="Delete product" onPress={confirmDelete} />
+          <IconButton icon={Trash2} accessibilityLabel={t('product.deleteProduct')} onPress={confirmDelete} />
           <IconButton
             icon={Pencil}
             variant="tonal"
-            accessibilityLabel="Edit product"
+            accessibilityLabel={t('product.editProduct')}
             onPress={() => router.push({ pathname: '/product-form', params: { id: product.id } })}
           />
         </View>
@@ -183,8 +185,8 @@ export default function ProductDetailScreen() {
 
         <Animated.View entering={FadeInDown.delay(40).springify().damping(18)} className="mt-5 gap-2">
           <View className="flex-row flex-wrap items-center gap-2">
-            {archived ? <Badge label="Archived" tone="neutral" /> : null}
-            {product.status === 'draft' ? <Badge label="Draft" tone="info" /> : null}
+            {archived ? <Badge label={t('product.archived')} tone="neutral" /> : null}
+            {product.status === 'draft' ? <Badge label={t('product.draft')} tone="info" /> : null}
             {category ? <Badge label={category.name} tone="accent" /> : null}
             {product.brand ? <Badge label={product.brand} /> : null}
           </View>
@@ -195,8 +197,10 @@ export default function ProductDetailScreen() {
             <CurrencyText amount={product.basePrice} currency={currency} variant="h1" />
             {margin !== null ? (
               <Text variant="caption" tone={margin >= 0 ? 'positive' : 'negative'} tabular>
-                {formatPercentDelta(margin).replace('+', '')} margin · cost{' '}
-                {formatMoney(product.cost, currency)}
+                {t('product.margin', {
+                  percent: formatPercentDelta(margin).replace('+', ''),
+                  cost: formatMoney(product.cost, currency),
+                })}
               </Text>
             ) : null}
           </View>
@@ -210,7 +214,7 @@ export default function ProductDetailScreen() {
         <Animated.View entering={FadeInDown.delay(80).springify().damping(18)} className="mt-5 flex-row gap-3">
           <Card className="flex-1 gap-1">
             <Text variant="caption" tone="secondary">
-              Units on hand
+              {t('product.unitsOnHand')}
             </Text>
             <Text variant="displaySm" weight="semibold" tabular>
               {units}
@@ -218,7 +222,7 @@ export default function ProductDetailScreen() {
           </Card>
           <Card className="flex-1 gap-1">
             <Text variant="caption" tone="secondary">
-              Stock value (cost)
+              {t('product.stockValue')}
             </Text>
             <CurrencyText amount={stockValue} currency={currency} variant="displaySm" />
           </Card>
@@ -226,7 +230,7 @@ export default function ProductDetailScreen() {
 
         <Animated.View entering={FadeInDown.delay(120).springify().damping(18)} className="mt-6 gap-3">
           <Text variant="h2" weight="semibold">
-            Variants
+            {t('product.variants')}
           </Text>
           <Card padded={false}>
             {product.variants.map((variant, index) => {
@@ -255,7 +259,7 @@ export default function ProductDetailScreen() {
                         size={36}
                         iconSize={16}
                         variant="surface"
-                        accessibilityLabel={`Adjust stock for ${variantLabel(variant)}`}
+                        accessibilityLabel={t('product.adjustStockFor', { name: variantLabel(variant) })}
                         onPress={() => openAdjust(variant)}
                       />
                       <Badge
@@ -273,7 +277,7 @@ export default function ProductDetailScreen() {
 
         <Animated.View entering={FadeInDown.delay(160).springify().damping(18)} className="mt-6 gap-3">
           <Text variant="h2" weight="semibold">
-            Stock history
+            {t('product.stockHistory')}
           </Text>
           {movementsQuery.data && movementsQuery.data.length > 0 ? (
             <Card padded={false}>
@@ -300,7 +304,7 @@ export default function ProductDetailScreen() {
                     </View>
                     <View className="flex-1">
                       <Text variant="body" weight="medium">
-                        {meta.label}
+                        {t(meta.labelKey)}
                         {variant && Object.keys(variant.attributes).length > 0
                           ? ` · ${variantLabel(variant)}`
                           : ''}
@@ -325,7 +329,7 @@ export default function ProductDetailScreen() {
             </Card>
           ) : (
             <Text variant="caption" tone="tertiary">
-              No movements yet — restocks, sales and adjustments will appear here.
+              {t('product.noMovements')}
             </Text>
           )}
         </Animated.View>

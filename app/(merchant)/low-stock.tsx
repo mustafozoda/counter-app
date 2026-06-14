@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, PackageCheck, RotateCcw } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -24,6 +25,7 @@ import type { ProductVariant } from '@/types/models';
 
 export default function LowStockScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const productsQuery = useProducts();
   const adjustSheet = useSheetRef();
   const [target, setTarget] = useState<{ variant: ProductVariant; productId: string } | null>(null);
@@ -38,14 +40,14 @@ export default function LowStockScreen() {
   return (
     <Screen padded={false}>
       <View className="flex-row items-center gap-3 px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <View>
           <Text variant="h1" weight="bold">
-            Low stock
+            {t('lowStock.title')}
           </Text>
           {attention.length > 0 ? (
             <Text variant="caption" tone="tertiary">
-              {attention.length} product{attention.length === 1 ? '' : 's'} need attention
+              {t('lowStock.needAttention', { count: attention.length })}
             </Text>
           ) : null}
         </View>
@@ -61,9 +63,9 @@ export default function LowStockScreen() {
         <View className="flex-1 justify-center">
           <EmptyState
             icon={PackageCheck}
-            title="Shelves look healthy"
-            message="Nothing is low or out of stock right now."
-            actionLabel="Back to products"
+            title={t('lowStock.healthyTitle')}
+            message={t('lowStock.healthyMsg')}
+            actionLabel={t('lowStock.backToProducts')}
             onAction={() => router.back()}
           />
         </View>
@@ -88,11 +90,11 @@ export default function LowStockScreen() {
                         {product.name}
                       </Text>
                       <Text variant="caption" tone="tertiary">
-                        {urgent.length} of {product.variants.length} variants affected
+                        {t('lowStock.variantsAffected', { affected: urgent.length, total: product.variants.length })}
                       </Text>
                     </View>
                     <Button
-                      label="View"
+                      label={t('lowStock.view')}
                       size="sm"
                       variant="ghost"
                       onPress={() => router.push({ pathname: '/product/[id]', params: { id: product.id } })}
@@ -114,12 +116,12 @@ export default function LowStockScreen() {
                           </Text>
                         </View>
                         <Badge
-                          label={status === 'out' ? 'Out' : `${variant.stockQty} left`}
+                          label={status === 'out' ? t('lowStock.out') : t('lowStock.left', { count: variant.stockQty })}
                           tone={status === 'out' ? 'negative' : 'caution'}
                           dot
                         />
                         <Button
-                          label="Restock"
+                          label={t('lowStock.restock')}
                           size="sm"
                           variant="secondary"
                           icon={RotateCcw}

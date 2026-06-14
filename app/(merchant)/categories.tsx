@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeft, FolderPlus, FolderTree, Pencil, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
@@ -28,6 +29,7 @@ import type { Category } from '@/types/models';
 
 export default function CategoriesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
   const saveCategory = useSaveCategory();
@@ -57,14 +59,14 @@ export default function CategoriesScreen() {
   const submit = () => {
     const trimmed = name.trim();
     if (trimmed.length < 2) {
-      toast.error('Name too short', 'Category names need at least 2 characters.');
+      toast.error(t('categories.nameShort'), t('categories.nameShortBody'));
       return;
     }
     saveCategory.mutate(
       { id: editing?.id, name: trimmed, parentId: editing?.parentId ?? null },
       {
         onSuccess: () => {
-          toast.success(editing ? 'Category renamed' : 'Category added', trimmed);
+          toast.success(editing ? t('categories.categoryRenamed') : t('categories.categoryAdded'), trimmed);
           editSheet.current?.dismiss();
         },
       },
@@ -74,18 +76,18 @@ export default function CategoriesScreen() {
   const confirmDelete = (category: Category) => {
     const count = counts.get(category.id) ?? 0;
     Alert.alert(
-      'Delete category',
+      t('categories.deleteCategory'),
       count > 0
-        ? `${count} product${count === 1 ? '' : 's'} will become uncategorized.`
-        : `Remove "${category.name}"?`,
+        ? t('categories.deleteWithProducts', { count })
+        : t('categories.deleteEmpty', { name: category.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () =>
             deleteCategory.mutate(category.id, {
-              onSuccess: () => toast.success('Category deleted', category.name),
+              onSuccess: () => toast.success(t('categories.categoryDeleted'), category.name),
             }),
         },
       ],
@@ -96,15 +98,15 @@ export default function CategoriesScreen() {
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
         <View className="flex-row items-center gap-3">
-          <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+          <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
           <Text variant="h1" weight="bold">
-            Categories
+            {t('categories.title')}
           </Text>
         </View>
         <IconButton
           icon={FolderPlus}
           variant="tonal"
-          accessibilityLabel="Add category"
+          accessibilityLabel={t('categories.addCategory')}
           onPress={() => openEditor(null)}
         />
       </View>
@@ -119,9 +121,9 @@ export default function CategoriesScreen() {
         <View className="flex-1 justify-center">
           <EmptyState
             icon={FolderTree}
-            title="Organize your catalog"
-            message="Categories power filtering here and the storefront later."
-            actionLabel="Add a category"
+            title={t('categories.organizeTitle')}
+            message={t('categories.organizeMsg')}
+            actionLabel={t('categories.addACategory')}
             onAction={() => openEditor(null)}
           />
         </View>
@@ -139,8 +141,8 @@ export default function CategoriesScreen() {
             >
               <SwipeableRow
                 actions={[
-                  { icon: Pencil, label: 'Rename', tone: 'accent', onPress: () => openEditor(category) },
-                  { icon: Trash2, label: 'Delete', tone: 'negative', onPress: () => confirmDelete(category) },
+                  { icon: Pencil, label: t('categories.rename'), tone: 'accent', onPress: () => openEditor(category) },
+                  { icon: Trash2, label: t('common.delete'), tone: 'negative', onPress: () => confirmDelete(category) },
                 ]}
               >
                 <Card
@@ -152,7 +154,7 @@ export default function CategoriesScreen() {
                     {category.name}
                   </Text>
                   <Text variant="caption" tone="tertiary" tabular>
-                    {counts.get(category.id) ?? 0} products
+                    {t('categories.productsCount', { count: counts.get(category.id) ?? 0 })}
                   </Text>
                 </Card>
               </SwipeableRow>
@@ -161,11 +163,11 @@ export default function CategoriesScreen() {
         </ScrollView>
       )}
 
-      <Sheet ref={editSheet} title={editing ? 'Rename category' : 'New category'}>
+      <Sheet ref={editSheet} title={editing ? t('categories.renameCategory') : t('categories.newCategory')}>
         <View className="gap-4">
-          <TextField label="Category name" value={name} onChangeText={setName} autoFocus />
+          <TextField label={t('categories.categoryName')} value={name} onChangeText={setName} autoFocus />
           <Button
-            label={editing ? 'Save' : 'Add category'}
+            label={editing ? t('common.save') : t('categories.addBtn')}
             size="lg"
             fullWidth
             loading={saveCategory.isPending}
