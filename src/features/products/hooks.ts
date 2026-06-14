@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
+import { i18n } from '@/i18n';
 import { productsApi, type CategoryInput, type ProductInput } from '@/api/products';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
@@ -119,7 +120,7 @@ export function useAddSampleCatalog() {
     mutationFn: () => productsApi.addSampleCatalog(vertical),
     onSuccess: (count) => {
       invalidate();
-      toast.success('Sample catalog added', `${count} products are on your shelves.`);
+      toast.success(i18n.t('products.sampleAdded'), i18n.t('products.sampleAddedMsg', { count }));
     },
   });
 }
@@ -167,7 +168,7 @@ export function useImportFirstProductDraft() {
       {
         onSuccess: () => {
           clearDraft();
-          toast.success('First product added', `"${draft.name}" is in your catalog.`);
+          toast.success(i18n.t('products.firstAdded'), i18n.t('products.firstAddedMsg', { name: draft.name }));
         },
         onError: () => {
           draftImportStarted = false;

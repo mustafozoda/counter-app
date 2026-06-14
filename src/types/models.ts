@@ -286,8 +286,12 @@ export type NotificationType =
 export interface AppNotification {
   id: Id;
   type: NotificationType;
-  title: string;
-  body: string;
+  /** i18n key + params for the title, resolved with `t()` at render time. */
+  titleKey: string;
+  titleParams?: Record<string, string | number>;
+  /** i18n key + params for the body, resolved with `t()` at render time. */
+  bodyKey: string;
+  bodyParams?: Record<string, string | number>;
   read: boolean;
   createdAt: string;
 }

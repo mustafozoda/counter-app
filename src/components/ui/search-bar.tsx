@@ -1,4 +1,5 @@
 import { Search, X } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 
 import { cn } from '@/lib/cn';
@@ -12,6 +13,7 @@ export interface SearchBarProps extends Omit<TextInputProps, 'style'> {
 
 /** Rounded search field with built-in clear action. */
 export function SearchBar({ value, onChangeText, placeholder, className, ...rest }: SearchBarProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   return (
@@ -25,7 +27,7 @@ export function SearchBar({ value, onChangeText, placeholder, className, ...rest
       <TextInput
         value={value}
         onChangeText={onChangeText}
-        placeholder={placeholder ?? 'Search'}
+        placeholder={placeholder ?? t('actions.search')}
         placeholderTextColor={colors.inkTertiary}
         className="flex-1 text-ink"
         style={textStyle('body')}
@@ -40,7 +42,7 @@ export function SearchBar({ value, onChangeText, placeholder, className, ...rest
           onPress={() => onChangeText('')}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Clear search"
+          accessibilityLabel={t('actions.clearSearch')}
           className="h-5 w-5 items-center justify-center rounded-full bg-ink-tertiary/30"
         >
           <X size={12} color={colors.surface} strokeWidth={3} />

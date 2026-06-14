@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, ImagePlus, X } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, View } from 'react-native';
 
 import { haptics } from '@/lib/haptics';
@@ -20,6 +21,7 @@ const TILE = 96;
 
 /** Product photo grid: camera or library, tap × to remove. First image is the cover. */
 export function ImagePickerGrid({ images, onChange, max = 6 }: ImagePickerGridProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const addFromLibrary = async () => {
@@ -37,7 +39,7 @@ export function ImagePickerGrid({ images, onChange, max = 6 }: ImagePickerGridPr
   const addFromCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      toast.warning('Camera unavailable', 'Allow camera access in Settings to take photos.');
+      toast.warning(t('photos.cameraUnavailable'), t('photos.cameraUnavailableMsg'));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
@@ -47,10 +49,10 @@ export function ImagePickerGrid({ images, onChange, max = 6 }: ImagePickerGridPr
 
   const pick = () => {
     haptics.tap();
-    Alert.alert('Add photo', undefined, [
-      { text: 'Take photo', onPress: () => void addFromCamera() },
-      { text: 'Choose from library', onPress: () => void addFromLibrary() },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('actions.addPhoto'), undefined, [
+      { text: t('photos.takePhoto'), onPress: () => void addFromCamera() },
+      { text: t('photos.chooseLibrary'), onPress: () => void addFromLibrary() },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -63,12 +65,12 @@ export function ImagePickerGrid({ images, onChange, max = 6 }: ImagePickerGridPr
             style={{ width: TILE, height: TILE, borderRadius: 16 }}
             contentFit="cover"
             transition={150}
-            accessibilityLabel={index === 0 ? 'Cover photo' : `Photo ${index + 1}`}
+            accessibilityLabel={index === 0 ? t('photos.coverPhoto') : t('photos.photoN', { n: index + 1 })}
           />
           {index === 0 ? (
             <View className="absolute bottom-1.5 left-1.5 rounded-full bg-ink/70 px-2 py-0.5">
               <Text variant="micro" weight="semibold" tone="inverse">
-                Cover
+                {t('photos.cover')}
               </Text>
             </View>
           ) : null}
@@ -76,7 +78,7 @@ export function ImagePickerGrid({ images, onChange, max = 6 }: ImagePickerGridPr
             onPress={() => onChange(images.filter((u) => u !== uri))}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={`Remove photo ${index + 1}`}
+            accessibilityLabel={t('photos.removePhotoN', { n: index + 1 })}
             className="absolute -right-2 -top-2 h-6 w-6 items-center justify-center rounded-full bg-ink"
           >
             <X size={12} color={colors.surface} strokeWidth={3} />
@@ -87,7 +89,7 @@ export function ImagePickerGrid({ images, onChange, max = 6 }: ImagePickerGridPr
         <PressableScale
           onPress={pick}
           accessibilityRole="button"
-          accessibilityLabel="Add photo"
+          accessibilityLabel={t('actions.addPhoto')}
           className="items-center justify-center gap-1 rounded-md border border-dashed border-ink-tertiary/50 bg-surface-sunken dark:bg-surface"
           style={{ width: TILE, height: TILE }}
         >
@@ -97,7 +99,7 @@ export function ImagePickerGrid({ images, onChange, max = 6 }: ImagePickerGridPr
             <ImagePlus size={22} color={colors.inkTertiary} strokeWidth={1.75} />
           )}
           <Text variant="micro" weight="medium" tone="tertiary">
-            {images.length === 0 ? 'Add photos' : 'Add more'}
+            {images.length === 0 ? t('photos.addPhotos') : t('photos.addMore')}
           </Text>
         </PressableScale>
       ) : null}

@@ -1,5 +1,7 @@
 import { format as formatDate, isToday, isYesterday } from 'date-fns';
 
+import { i18n } from '@/i18n';
+
 export interface CurrencyFormatSpec {
   /** ISO 4217 code, e.g. "USD". */
   code: string;
@@ -110,8 +112,8 @@ export function formatCompact(value: number): string {
 
 /** Friendly day label: "Today", "Yesterday", or "Mar 4". */
 export function formatDayLabel(date: Date): string {
-  if (isToday(date)) return 'Today';
-  if (isYesterday(date)) return 'Yesterday';
+  if (isToday(date)) return i18n.t('dates.today');
+  if (isYesterday(date)) return i18n.t('dates.yesterday');
   return formatDate(date, 'MMM d');
 }
 
