@@ -30,7 +30,6 @@ import {
   SearchBar,
   Sheet,
   Skeleton,
-  SwipeTabs,
   SwipeableRow,
   Text,
   useSheetRef,
@@ -187,160 +186,158 @@ export default function ProductsScreen() {
   );
 
   return (
-    <SwipeTabs name="products">
-      <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
-        <View className="flex-row items-center justify-between px-5 pb-3 pt-2">
-          <View>
-            <Text variant="h1" weight="bold">
-              {t('products.title')}
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
+      <View className="flex-row items-center justify-between px-5 pb-3 pt-2">
+        <View>
+          <Text variant="h1" weight="bold">
+            {t('products.title')}
+          </Text>
+          {hasAnyCurrent ? (
+            <Text variant="caption" tone="tertiary">
+              {t('products.inCatalog', { count: currentCount })}
             </Text>
-            {hasAnyCurrent ? (
-              <Text variant="caption" tone="tertiary">
-                {t('products.inCatalog', { count: currentCount })}
-              </Text>
-            ) : null}
-          </View>
-          <View className="flex-row items-center gap-2">
-            <IconButton
-              icon={ScanBarcode}
-              accessibilityLabel={t('nav.sell')}
-              onPress={() => router.push('/scan')}
-            />
-            <IconButton
-              icon={MoreVertical}
-              accessibilityLabel={t('products.catalog')}
-              onPress={() => actionsSheet.current?.present()}
-            />
-            <IconButton
-              icon={Plus}
-              variant="tonal"
-              accessibilityLabel={t('products.addProduct')}
-              onPress={() => router.push('/product-form')}
+          ) : null}
+        </View>
+        <View className="flex-row items-center gap-2">
+          <IconButton
+            icon={ScanBarcode}
+            accessibilityLabel={t('nav.sell')}
+            onPress={() => router.push('/scan')}
+          />
+          <IconButton
+            icon={MoreVertical}
+            accessibilityLabel={t('products.catalog')}
+            onPress={() => actionsSheet.current?.present()}
+          />
+          <IconButton
+            icon={Plus}
+            variant="tonal"
+            accessibilityLabel={t('products.addProduct')}
+            onPress={() => router.push('/product-form')}
+          />
+        </View>
+      </View>
+
+      {productsQuery.isLoading ? (
+        <View className="gap-3 px-5 pt-2">
+          <Skeleton height={48} radius={24} />
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={88} radius={20} />
+          ))}
+        </View>
+      ) : !hasAnyCurrent && !filter.archived ? (
+        <View className="flex-1 justify-center pb-24">
+          <EmptyState
+            icon={PackageOpen}
+            title={t('products.emptyTitle')}
+            message={t('products.emptyMessage')}
+            actionLabel={t('products.addProduct')}
+            onAction={() => router.push('/product-form')}
+          />
+          <View className="items-center">
+            <Button
+              label={t('products.addSample')}
+              variant="ghost"
+              icon={Sparkles}
+              loading={addSamples.isPending}
+              onPress={() => addSamples.mutate()}
             />
           </View>
         </View>
-
-        {productsQuery.isLoading ? (
-          <View className="gap-3 px-5 pt-2">
-            <Skeleton height={48} radius={24} />
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} height={88} radius={20} />
-            ))}
-          </View>
-        ) : !hasAnyCurrent && !filter.archived ? (
-          <View className="flex-1 justify-center pb-24">
+      ) : (
+        <FlashList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          ListHeaderComponent={listHeader}
+          contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
             <EmptyState
-              icon={PackageOpen}
-              title={t('products.emptyTitle')}
-              message={t('products.emptyMessage')}
-              actionLabel={t('products.addProduct')}
-              onAction={() => router.push('/product-form')}
+              icon={PackageSearch}
+              title={t('products.noMatchTitle')}
+              message={filter.archived ? t('products.noArchived') : t('products.noMatchMessage')}
+              actionLabel={t('products.clearFilters')}
+              onAction={() => setFilter(defaultCatalogFilter)}
             />
-            <View className="items-center">
-              <Button
-                label={t('products.addSample')}
-                variant="ghost"
-                icon={Sparkles}
-                loading={addSamples.isPending}
-                onPress={() => addSamples.mutate()}
-              />
+          }
+        />
+      )}
+
+      <CategoryPickerSheet
+        ref={categorySheet}
+        categories={categories}
+        selected={filter.categoryId}
+        nullLabel={t('products.allCategories')}
+        onSelect={(categoryId) => patchFilter({ categoryId })}
+        dismiss={() => categorySheet.current?.dismiss()}
+      />
+      <SortSheet
+        ref={sortSheet}
+        selected={filter.sort}
+        onSelect={(sort) => patchFilter({ sort })}
+        dismiss={() => sortSheet.current?.dismiss()}
+      />
+
+      <Sheet ref={actionsSheet} title={t('products.catalog')}>
+        <View className="gap-1">
+          {(
+            [
+              {
+                icon: FolderTree,
+                label: t('products.manageCategories'),
+                onPress: () => {
+                  actionsSheet.current?.dismiss();
+                  router.push('/categories');
+                },
+              },
+              {
+                icon: PackageSearch,
+                label: t('products.lowStockView'),
+                onPress: () => {
+                  actionsSheet.current?.dismiss();
+                  router.push('/low-stock');
+                },
+              },
+              {
+                icon: Share2,
+                label: t('products.exportCsv'),
+                onPress: () => {
+                  actionsSheet.current?.dismiss();
+                  void shareCatalogCsv(products, categories);
+                },
+              },
+              {
+                icon: filter.archived ? ArchiveRestore : Archive,
+                label: filter.archived ? t('products.showCurrent') : t('products.showArchived'),
+                onPress: () => {
+                  patchFilter({ archived: !filter.archived });
+                  actionsSheet.current?.dismiss();
+                },
+              },
+            ] as const
+          ).map((action) => (
+            <PressableScale
+              key={action.label}
+              scaleTo={0.98}
+              onPress={action.onPress}
+              accessibilityRole="button"
+              className="flex-row items-center gap-3 rounded-md px-3 py-3.5"
+            >
+              <action.icon size={20} color={colors.inkSecondary} strokeWidth={2} />
+              <Text variant="body" weight="medium">
+                {action.label}
+              </Text>
+            </PressableScale>
+          ))}
+          {!hasAnyCurrent ? null : (
+            <View className="mt-2 px-3">
+              <Badge label={`${products.length} products · ${categories.length} categories`} />
             </View>
-          </View>
-        ) : (
-          <FlashList
-            data={filtered}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            ListHeaderComponent={listHeader}
-            contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <EmptyState
-                icon={PackageSearch}
-                title={t('products.noMatchTitle')}
-                message={filter.archived ? t('products.noArchived') : t('products.noMatchMessage')}
-                actionLabel={t('products.clearFilters')}
-                onAction={() => setFilter(defaultCatalogFilter)}
-              />
-            }
-          />
-        )}
-
-        <CategoryPickerSheet
-          ref={categorySheet}
-          categories={categories}
-          selected={filter.categoryId}
-          nullLabel={t('products.allCategories')}
-          onSelect={(categoryId) => patchFilter({ categoryId })}
-          dismiss={() => categorySheet.current?.dismiss()}
-        />
-        <SortSheet
-          ref={sortSheet}
-          selected={filter.sort}
-          onSelect={(sort) => patchFilter({ sort })}
-          dismiss={() => sortSheet.current?.dismiss()}
-        />
-
-        <Sheet ref={actionsSheet} title={t('products.catalog')}>
-          <View className="gap-1">
-            {(
-              [
-                {
-                  icon: FolderTree,
-                  label: t('products.manageCategories'),
-                  onPress: () => {
-                    actionsSheet.current?.dismiss();
-                    router.push('/categories');
-                  },
-                },
-                {
-                  icon: PackageSearch,
-                  label: t('products.lowStockView'),
-                  onPress: () => {
-                    actionsSheet.current?.dismiss();
-                    router.push('/low-stock');
-                  },
-                },
-                {
-                  icon: Share2,
-                  label: t('products.exportCsv'),
-                  onPress: () => {
-                    actionsSheet.current?.dismiss();
-                    void shareCatalogCsv(products, categories);
-                  },
-                },
-                {
-                  icon: filter.archived ? ArchiveRestore : Archive,
-                  label: filter.archived ? t('products.showCurrent') : t('products.showArchived'),
-                  onPress: () => {
-                    patchFilter({ archived: !filter.archived });
-                    actionsSheet.current?.dismiss();
-                  },
-                },
-              ] as const
-            ).map((action) => (
-              <PressableScale
-                key={action.label}
-                scaleTo={0.98}
-                onPress={action.onPress}
-                accessibilityRole="button"
-                className="flex-row items-center gap-3 rounded-md px-3 py-3.5"
-              >
-                <action.icon size={20} color={colors.inkSecondary} strokeWidth={2} />
-                <Text variant="body" weight="medium">
-                  {action.label}
-                </Text>
-              </PressableScale>
-            ))}
-            {!hasAnyCurrent ? null : (
-              <View className="mt-2 px-3">
-                <Badge label={`${products.length} products · ${categories.length} categories`} />
-              </View>
-            )}
-          </View>
-        </Sheet>
-      </SafeAreaView>
-    </SwipeTabs>
+          )}
+        </View>
+      </Sheet>
+    </SafeAreaView>
   );
 }

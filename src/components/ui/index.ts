@@ -23,7 +23,6 @@ export * from './skeleton';
 export * from './sparkline';
 export * from './stat-card';
 export * from './success-check';
-export * from './swipe-tabs';
 export * from './swipeable-row';
 export * from './switch-row';
 export * from './text';
