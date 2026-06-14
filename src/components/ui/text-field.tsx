@@ -1,6 +1,6 @@
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Eye, EyeOff, type LucideIcon } from 'lucide-react-native';
-import { forwardRef, useCallback, useContext, useRef, useState } from 'react';
+import { forwardRef, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 import Animated, {
   interpolate,
@@ -42,6 +42,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     prefix,
     containerClassName,
     value,
+    onChangeText,
     onFocus,
     onBlur,
     secureTextEntry,
@@ -55,6 +56,31 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const innerRef = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
+
+  // The native input is left uncontrolled (defaultValue + onChangeText) so its
+  // text buffer is never overwritten while you type. Feeding `value` back on
+  // every keystroke races with fast input and duplicates characters (worst on
+  // multiline inputs under the New Architecture). We only resync the buffer —
+  // by remounting it with a fresh key — when `value` changes from the outside
+  // while the field is NOT focused (a form reset, or loading a record to edit).
+  // A focused field is always the source of truth for its own text.
+  const lastValueRef = useRef(value ?? '');
+  const [syncKey, setSyncKey] = useState(0);
+
+  useEffect(() => {
+    const next = value ?? '';
+    if (focused || next === lastValueRef.current) return;
+    lastValueRef.current = next;
+    setSyncKey((key) => key + 1);
+  }, [value, focused]);
+
+  const handleChangeText = useCallback(
+    (text: string) => {
+      lastValueRef.current = text;
+      onChangeText?.(text);
+    },
+    [onChangeText],
+  );
 
   const hasValue = (value?.length ?? 0) > 0;
   const floated = focused || hasValue;
@@ -151,7 +177,9 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
               {insideSheet ? (
                 <BottomSheetTextInput
                   ref={setRefs as never}
-                  value={value}
+                  key={syncKey}
+                  defaultValue={value}
+                  onChangeText={handleChangeText}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   secureTextEntry={secureTextEntry && !revealed}
@@ -169,7 +197,9 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
               ) : (
                 <TextInput
                   ref={setRefs}
-                  value={value}
+                  key={syncKey}
+                  defaultValue={value}
+                  onChangeText={handleChangeText}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   secureTextEntry={secureTextEntry && !revealed}
