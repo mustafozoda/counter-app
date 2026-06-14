@@ -74,7 +74,10 @@ export const Sheet = forwardRef<BottomSheetModal, SheetProps>(function Sheet(
       handleIndicatorStyle={{ backgroundColor: colors.inkTertiary, width: 40, height: 4 }}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
+      // Must stay "adjustPan": with "interactive" + "adjustResize", gorhom skips
+      // its own keyboard-avoidance on Android and defers to an OS window resize
+      // that doesn't happen here — leaving inputs hidden behind the keyboard.
+      android_keyboardInputMode="adjustPan"
     >
       <InsideSheetContext.Provider value={true}>
         {raw ? (
