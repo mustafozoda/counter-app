@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Check, Heart, Minus, Plus, ShoppingBag } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -22,6 +23,7 @@ import type { ProductVariant } from '@/types/models';
 export default function StorefrontProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const width = useContentWidth();
   const { colors } = useTheme();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
@@ -59,7 +61,7 @@ export default function StorefrontProductDetail() {
     return (
       <Screen contentClassName="justify-center">
         <Text variant="h2" weight="semibold" className="text-center">
-          This product is unavailable.
+          {t('storefront.productUnavailable')}
         </Text>
       </Screen>
     );
@@ -85,23 +87,23 @@ export default function StorefrontProductDetail() {
     );
     if (ok) {
       haptics.success();
-      toast.success('Added to cart', `${qty} × ${product.name}`);
+      toast.success(t('storefront.addedToCart'), `${qty} × ${product.name}`);
       router.back();
     } else {
       haptics.warning();
-      toast.warning('Not enough stock', 'Reduce the quantity and try again.');
+      toast.warning(t('storefront.notEnoughStock'), t('storefront.reduceQty'));
     }
   };
 
   return (
     <Screen padded={false} edges={['top', 'left', 'right']}>
       <View className="absolute left-5 right-5 top-2 z-10 flex-row justify-between" style={{ marginTop: 4 }}>
-        <IconButton icon={ArrowLeft} variant="surface" accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} variant="surface" accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <IconButton
           icon={Heart}
           variant="surface"
           iconColor={wished ? colors.negative : colors.inkSecondary}
-          accessibilityLabel={wished ? 'Remove from wishlist' : 'Save to wishlist'}
+          accessibilityLabel={wished ? t('storefront.wishlistRemove') : t('storefront.wishlistSave')}
           onPress={() => {
             haptics.tap();
             toggleWish(product.id);
@@ -145,7 +147,7 @@ export default function StorefrontProductDetail() {
           {product.variants.length > 1 ? (
             <Animated.View entering={FadeInDown.delay(60).springify().damping(18)} className="mt-6 gap-3">
               <Text variant="title" weight="semibold">
-                Choose an option
+                {t('storefront.chooseOption')}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {product.variants.map((variant) => {
@@ -181,17 +183,17 @@ export default function StorefrontProductDetail() {
           {!soldOut ? (
             <Animated.View entering={FadeInDown.delay(100).springify().damping(18)} className="mt-6 flex-row items-center gap-4">
               <Text variant="title" weight="semibold">
-                Quantity
+                {t('storefront.quantity')}
               </Text>
               <View className="h-11 flex-row items-center gap-1 rounded-full border border-hairline bg-surface p-1.5 dark:bg-surface-elevated">
-                <IconButton icon={Minus} size={32} iconSize={15} variant="tonal" accessibilityLabel="Decrease" onPress={() => setQty((q) => Math.max(1, q - 1))} />
+                <IconButton icon={Minus} size={32} iconSize={15} variant="tonal" accessibilityLabel={t('storefront.decrease')} onPress={() => setQty((q) => Math.max(1, q - 1))} />
                 <Text variant="title" weight="semibold" tabular className="min-w-8 text-center">
                   {qty}
                 </Text>
-                <IconButton icon={Plus} size={32} iconSize={15} variant="tonal" accessibilityLabel="Increase" onPress={() => setQty((q) => Math.min(maxQty, q + 1))} />
+                <IconButton icon={Plus} size={32} iconSize={15} variant="tonal" accessibilityLabel={t('storefront.increase')} onPress={() => setQty((q) => Math.min(maxQty, q + 1))} />
               </View>
               {maxQty <= 5 ? (
-                <Badge label={`Only ${maxQty} left`} tone="caution" />
+                <Badge label={t('storefront.onlyLeft', { count: maxQty })} tone="caution" />
               ) : null}
             </Animated.View>
           ) : null}
@@ -200,9 +202,9 @@ export default function StorefrontProductDetail() {
 
       <View className="absolute bottom-0 left-0 right-0 border-t border-hairline bg-surface px-5 pb-9 pt-4 dark:bg-surface-elevated">
         {soldOut ? (
-          <Button label="Sold out" size="lg" fullWidth disabled onPress={() => {}} />
+          <Button label={t('storefront.soldOut')} size="lg" fullWidth disabled onPress={() => {}} />
         ) : (
-          <Button label={`Add to cart · ${formatMoney(price * qty, currency)}`} icon={ShoppingBag} size="lg" fullWidth onPress={addToCart} />
+          <Button label={t('storefront.addToCartPrice', { price: formatMoney(price * qty, currency) })} icon={ShoppingBag} size="lg" fullWidth onPress={addToCart} />
         )}
       </View>
     </Screen>

@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Heart, MapPin, Package, Store as StoreIcon } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,33 +14,34 @@ import { useTheme } from '@/theme';
 
 export default function StorefrontAccount() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const store = useStoreProfile((s) => s.store);
   const wishlistCount = useWishlist((s) => s.productIds.length);
   const cartCount = useStorefrontCart((s) => s.lines.length);
 
   const rows = [
-    { icon: Package, label: 'My orders', caption: 'Track and reorder', onPress: () => toast.info('Demo storefront', 'Order history is available once checkout is connected to a backend.') },
-    { icon: Heart, label: 'Wishlist', caption: `${wishlistCount} saved`, onPress: () => router.push('/(storefront)/(tabs)/wishlist') },
-    { icon: MapPin, label: 'Addresses', caption: 'Delivery details', onPress: () => toast.info('Demo storefront', 'Saved addresses arrive with the connected backend.') },
+    { icon: Package, label: t('storefront.myOrders'), caption: t('storefront.trackReorder'), onPress: () => toast.info(t('storefront.demoTitle'), t('storefront.demoOrders')) },
+    { icon: Heart, label: t('storefront.wishlist'), caption: t('storefront.savedCount', { count: wishlistCount }), onPress: () => router.push('/(storefront)/(tabs)/wishlist') },
+    { icon: MapPin, label: t('storefront.addresses'), caption: t('storefront.deliveryDetails'), onPress: () => toast.info(t('storefront.demoTitle'), t('storefront.demoAddresses')) },
   ];
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <ScrollView contentContainerClassName="px-5 pb-28 pt-1" showsVerticalScrollIndicator={false}>
         <Text variant="h1" weight="bold">
-          Account
+          {t('storefront.navAccount')}
         </Text>
 
         <Animated.View entering={FadeInDown.springify().damping(18)} className="mt-5">
           <Card className="flex-row items-center gap-4">
-            <Avatar name="Guest Shopper" size={52} />
+            <Avatar name={t('storefront.guestShopper')} size={52} />
             <View className="flex-1">
               <Text variant="title" weight="semibold">
-                Guest shopper
+                {t('storefront.guestShopper')}
               </Text>
               <Text variant="caption" tone="tertiary">
-                Browsing {store?.name ?? 'the store'}
+                {t('storefront.browsing', { name: store?.name ?? t('storefront.theStore') })}
               </Text>
             </View>
           </Card>
@@ -79,12 +81,12 @@ export default function StorefrontAccount() {
           >
             <StoreIcon size={18} color={colors.primary} strokeWidth={2} />
             <Text variant="body" weight="semibold" tone="accent">
-              Back to merchant app
+              {t('storefront.backToMerchant')}
             </Text>
           </PressableScale>
           {cartCount > 0 ? (
             <Text variant="micro" tone="tertiary" className="mt-3 text-center">
-              {cartCount} item{cartCount === 1 ? '' : 's'} waiting in your cart
+              {t('storefront.itemsWaiting', { count: cartCount })}
             </Text>
           ) : null}
         </Animated.View>

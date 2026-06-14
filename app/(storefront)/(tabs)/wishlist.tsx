@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Heart } from 'lucide-react-native';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,6 +14,7 @@ import { useWishlist } from '@/stores/wishlist';
 
 export default function StorefrontWishlist() {
   const router = useRouter();
+  const { t } = useTranslation();
   const width = useContentWidth();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const productIds = useWishlist((s) => s.productIds);
@@ -28,11 +30,11 @@ export default function StorefrontWishlist() {
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <View className="px-5 pb-2 pt-1">
         <Text variant="h1" weight="bold">
-          Saved
+          {t('storefront.navSaved')}
         </Text>
         {saved.length > 0 ? (
           <Text variant="caption" tone="tertiary">
-            {saved.length} item{saved.length === 1 ? '' : 's'} you love
+            {t('storefront.itemsYouLove', { count: saved.length })}
           </Text>
         ) : null}
       </View>
@@ -41,9 +43,9 @@ export default function StorefrontWishlist() {
         <View className="flex-1 justify-center pb-20">
           <EmptyState
             icon={Heart}
-            title="No saved items yet"
-            message="Tap the heart on any product to save it for later."
-            actionLabel="Start browsing"
+            title={t('storefront.wishlistEmptyTitle')}
+            message={t('storefront.wishlistEmptyMsg')}
+            actionLabel={t('storefront.startBrowsing')}
             onAction={() => router.push('/(storefront)/(tabs)/catalog')}
           />
         </View>

@@ -2,6 +2,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PackageSearch } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,6 +17,7 @@ type Sort = 'featured' | 'price-asc' | 'price-desc';
 
 export default function StorefrontCatalog() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ category?: string }>();
   const width = useContentWidth();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
@@ -49,11 +51,11 @@ export default function StorefrontCatalog() {
   const header = (
     <View className="gap-3 pb-3">
       <Text variant="h1" weight="bold">
-        Browse
+        {t('storefront.navBrowse')}
       </Text>
-      <SearchBar value={query} onChangeText={setQuery} placeholder="Search products" />
+      <SearchBar value={query} onChangeText={setQuery} placeholder={t('storefront.searchProducts')} />
       <View className="flex-row flex-wrap gap-2">
-        <Chip label="All" selected={categoryId === null} onPress={() => setCategoryId(null)} />
+        <Chip label={t('common.all')} selected={categoryId === null} onPress={() => setCategoryId(null)} />
         {categories.map((c) => (
           <Chip
             key={c.id}
@@ -66,9 +68,9 @@ export default function StorefrontCatalog() {
       <View className="flex-row gap-2">
         {(
           [
-            { label: 'Featured', value: 'featured' },
-            { label: 'Price ↑', value: 'price-asc' },
-            { label: 'Price ↓', value: 'price-desc' },
+            { label: t('storefront.sortFeatured'), value: 'featured' },
+            { label: t('storefront.sortPriceAsc'), value: 'price-asc' },
+            { label: t('storefront.sortPriceDesc'), value: 'price-desc' },
           ] as const
         ).map((option) => (
           <Chip
@@ -101,9 +103,9 @@ export default function StorefrontCatalog() {
           ListEmptyComponent={
             <EmptyState
               icon={PackageSearch}
-              title="Nothing here"
-              message="Try a different search or category."
-              actionLabel="Clear filters"
+              title={t('storefront.emptyTitle')}
+              message={t('storefront.emptyMsg')}
+              actionLabel={t('actions.clear')}
               onAction={() => {
                 setQuery('');
                 setCategoryId(null);

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Banknote, CalendarClock, CreditCard, Truck, X } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -29,6 +30,7 @@ type Method = Extract<PaymentMethod, 'card' | 'cash' | 'installment'>;
 
 export default function StorefrontCheckout() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const store = useStoreProfile((s) => s.store);
   const currency = store?.currencyCode ?? 'TJS';
@@ -46,7 +48,7 @@ export default function StorefrontCheckout() {
 
   const place = () => {
     if (name.trim().length < 2 || address.trim().length < 4) {
-      toast.error('Add delivery details', 'We need a name and address to ship.');
+      toast.error(t('storefront.addDeliveryTitle'), t('storefront.addDeliveryMsg'));
       return;
     }
     // Online orders flow through the same sale pipeline as the POS, tagged as
@@ -80,7 +82,7 @@ export default function StorefrontCheckout() {
           clear();
           setDone(true);
         },
-        onError: () => toast.error('Checkout failed', 'Please try again.'),
+        onError: () => toast.error(t('storefront.checkoutFailed'), t('storefront.tryAgain')),
       },
     );
   };
@@ -92,15 +94,15 @@ export default function StorefrontCheckout() {
           <SuccessCheck size={128} />
           <Animated.View entering={FadeInDown.delay(STAGGER_MS * 4).springify().damping(18)} className="mt-8 items-center">
             <Text variant="display" weight="bold" className="text-center">
-              Order placed!
+              {t('storefront.orderPlaced')}
             </Text>
             <Text variant="body" tone="secondary" className="mt-2 text-center">
-              Thank you, {name.split(' ')[0] || 'friend'}. We&apos;ll get it ready right away.
+              {t('storefront.thankYou', { name: name.split(' ')[0] || t('storefront.friend') })}
             </Text>
           </Animated.View>
         </View>
         <Animated.View entering={FadeInDown.delay(STAGGER_MS * 7).springify().damping(18)} className="mt-12 w-full">
-          <Button label="Keep shopping" size="lg" fullWidth onPress={() => router.replace('/(storefront)/(tabs)')} />
+          <Button label={t('storefront.keepShopping')} size="lg" fullWidth onPress={() => router.replace('/(storefront)/(tabs)')} />
         </Animated.View>
       </Screen>
     );
@@ -110,29 +112,29 @@ export default function StorefrontCheckout() {
     <Screen edges={['top', 'left', 'right', 'bottom']} padded={false} keyboardAvoid>
       <View className="flex-row items-center justify-between px-5 pt-2">
         <Text variant="h1" weight="bold">
-          Checkout
+          {t('storefront.checkout')}
         </Text>
-        <IconButton icon={X} accessibilityLabel="Close" onPress={() => router.back()} />
+        <IconButton icon={X} accessibilityLabel={t('actions.close')} onPress={() => router.back()} />
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-40 pt-3" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text variant="h2" weight="semibold" className="mb-3">
-          Delivery
+          {t('storefront.delivery')}
         </Text>
         <View className="gap-4">
-          <TextField label="Full name" value={name} onChangeText={setName} />
-          <TextField label="Delivery address" value={address} onChangeText={setAddress} multiline />
+          <TextField label={t('customers.fullName')} value={name} onChangeText={setName} />
+          <TextField label={t('storefront.deliveryAddress')} value={address} onChangeText={setAddress} multiline />
         </View>
 
         <Text variant="h2" weight="semibold" className="mb-3 mt-7">
-          Payment
+          {t('orderDetail.payment')}
         </Text>
         <View className="gap-2.5">
           {(
             [
-              { value: 'card', icon: CreditCard, label: 'Card', caption: 'Pay securely online' },
-              { value: 'cash', icon: Banknote, label: 'Cash on delivery', caption: 'Pay when it arrives' },
-              { value: 'installment', icon: CalendarClock, label: 'Pay over time', caption: 'Split into installments' },
+              { value: 'card', icon: CreditCard, label: t('storefront.payCard'), caption: t('storefront.payCardCaption') },
+              { value: 'cash', icon: Banknote, label: t('storefront.payCash'), caption: t('storefront.payCashCaption') },
+              { value: 'installment', icon: CalendarClock, label: t('storefront.payInstallment'), caption: t('storefront.payInstallmentCaption') },
             ] as const
           ).map((option) => {
             const selected = method === option.value;
@@ -169,7 +171,7 @@ export default function StorefrontCheckout() {
         <View className="mt-7 gap-1.5 rounded-md bg-surface-sunken p-4 dark:bg-surface">
           <View className="flex-row justify-between">
             <Text variant="body" tone="secondary">
-              Subtotal
+              {t('orderDetail.subtotal')}
             </Text>
             <Text variant="body" weight="medium" tabular>
               {formatMoney(totals.subtotal, currency)}
@@ -178,7 +180,7 @@ export default function StorefrontCheckout() {
           {totals.tax > 0 ? (
             <View className="flex-row justify-between">
               <Text variant="body" tone="secondary">
-                Tax
+                {t('orderDetail.tax')}
               </Text>
               <Text variant="body" weight="medium" tabular>
                 {formatMoney(totals.tax, currency)}
@@ -187,10 +189,10 @@ export default function StorefrontCheckout() {
           ) : null}
           <View className="flex-row items-center justify-between">
             <Text variant="caption" tone="tertiary">
-              Delivery
+              {t('storefront.delivery')}
             </Text>
             <Text variant="caption" tone="tertiary">
-              Calculated at fulfillment
+              {t('storefront.calculatedAtFulfillment')}
             </Text>
           </View>
         </View>
@@ -201,12 +203,12 @@ export default function StorefrontCheckout() {
           <View className="flex-row items-center gap-2">
             <Truck size={16} color={colors.inkSecondary} strokeWidth={2} />
             <Text variant="body" tone="secondary">
-              {totals.itemCount} item{totals.itemCount === 1 ? '' : 's'}
+              {t('storefront.itemCount', { count: totals.itemCount })}
             </Text>
           </View>
           <CurrencyText amount={totals.total} currency={currency} variant="h2" />
         </View>
-        <Button label="Place order" size="lg" fullWidth loading={createSale.isPending} onPress={place} />
+        <Button label={t('storefront.placeOrder')} size="lg" fullWidth loading={createSale.isPending} onPress={place} />
       </View>
     </Screen>
   );
