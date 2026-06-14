@@ -2,11 +2,13 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, History, SquarePen } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Keyboard, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, PressableScale, Text, useSheetRef } from '@/components/ui';
 import { createLocalId } from '@/lib/id';
+import { useTheme } from '@/theme';
 
 import { Composer } from '@/features/assistant/components/composer';
 import { ConversationSheet } from '@/features/assistant/components/conversation-sheet';
@@ -52,6 +54,7 @@ function AssistantHero({ onPick }: { onPick: (prompt: string) => void }) {
 export default function AssistantScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const cancelRef = useRef<(() => void) | null>(null);
@@ -163,9 +166,9 @@ export default function AssistantScreen() {
       </View>
 
       <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         keyboardVerticalOffset={insets.top + 44}
+        style={{ flex: 1, backgroundColor: colors.background }}
       >
         {messages.length === 0 ? (
           <AssistantHero onPick={send} />
@@ -184,7 +187,10 @@ export default function AssistantScreen() {
           </ScrollView>
         )}
 
-        <View style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }}>
+        <View
+          className="bg-background"
+          style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }}
+        >
           <Composer busy={busy} onSend={send} onStop={stop} />
         </View>
       </KeyboardAvoidingView>
