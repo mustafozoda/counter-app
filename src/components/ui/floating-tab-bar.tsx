@@ -1,4 +1,4 @@
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -134,9 +134,10 @@ function SellButton({ onPress }: { onPress: () => void }) {
 /**
  * Counter's floating navigation: a soft pill bar with four tabs and the
  * raised gradient Sell FAB in the center (§6.4). Slides away when the
- * keyboard opens.
+ * keyboard opens. Backed by a Material Top Tabs navigator so screens track
+ * the finger and slide smoothly when swiped between.
  */
-export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+export function FloatingTabBar({ state, navigation }: MaterialTopTabBarProps) {
   const { colors, shadows, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
