@@ -1,0 +1,24 @@
+# Monorepo root. Each package (client/, server/) has its own .gitignore too.
+
+# Dependencies
+node_modules/
+
+# Expo / Metro caches
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Python (server)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets
+.env
+.env*.local
+
+# Logs / OS
+*.log
+.DS_Store

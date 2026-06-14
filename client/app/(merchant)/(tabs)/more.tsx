@@ -5,6 +5,7 @@ import {
   LogOut,
   Settings,
   ShoppingBag,
+  Sparkles,
   Tag,
   Truck,
   Users,
@@ -34,6 +35,13 @@ interface MenuEntry {
 }
 
 const MENU: MenuEntry[] = [
+  {
+    icon: Sparkles,
+    labelKey: 'assistant.title',
+    descKey: 'assistant.menuDesc',
+    phase: 'AI',
+    href: '/assistant',
+  },
   {
     icon: Users,
     labelKey: 'more.customers',
