@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ShoppingBag, Trash2 } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +15,7 @@ import { useStoreProfile } from '@/stores/store-profile';
 
 export default function StorefrontCart() {
   const router = useRouter();
+  const { t } = useTranslation();
   const store = useStoreProfile((s) => s.store);
   const currency = store?.currencyCode ?? 'TJS';
 
@@ -27,7 +29,7 @@ export default function StorefrontCart() {
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <View className="px-5 pb-2 pt-1">
         <Text variant="h1" weight="bold">
-          Your cart
+          {t('storefront.cartTitle')}
         </Text>
       </View>
 
@@ -35,9 +37,9 @@ export default function StorefrontCart() {
         <View className="flex-1 justify-center pb-20">
           <EmptyState
             icon={ShoppingBag}
-            title="Your cart is empty"
-            message="Browse the shop and add things you love."
-            actionLabel="Start shopping"
+            title={t('storefront.cartEmptyTitle')}
+            message={t('storefront.cartEmptyMsg')}
+            actionLabel={t('storefront.startShopping')}
             onAction={() => router.push('/(storefront)/(tabs)/catalog')}
           />
         </View>
@@ -51,7 +53,7 @@ export default function StorefrontCart() {
                 entering={FadeInDown.springify().damping(18)}
               >
                 <SwipeableRow
-                  actions={[{ icon: Trash2, label: 'Remove', tone: 'negative', onPress: () => remove(line.variantId) }]}
+                  actions={[{ icon: Trash2, label: t('actions.remove'), tone: 'negative', onPress: () => remove(line.variantId) }]}
                 >
                   <View className="flex-row items-center gap-3 rounded-md border border-hairline bg-surface p-3 dark:bg-surface-elevated">
                     {line.imageUri ? (
@@ -87,7 +89,7 @@ export default function StorefrontCart() {
           <View className="border-t border-hairline bg-surface px-5 pb-28 pt-4 dark:bg-surface-elevated">
             <View className="mb-1 flex-row justify-between">
               <Text variant="body" tone="secondary">
-                Subtotal
+                {t('orderDetail.subtotal')}
               </Text>
               <Text variant="body" weight="medium" tabular>
                 {formatMoney(totals.subtotal, currency)}
@@ -96,7 +98,7 @@ export default function StorefrontCart() {
             {totals.tax > 0 ? (
               <View className="mb-1 flex-row justify-between">
                 <Text variant="body" tone="secondary">
-                  Tax
+                  {t('orderDetail.tax')}
                 </Text>
                 <Text variant="body" weight="medium" tabular>
                   {formatMoney(totals.tax, currency)}
@@ -105,14 +107,14 @@ export default function StorefrontCart() {
             ) : null}
             <View className="mb-3 mt-1 flex-row items-center justify-between">
               <Text variant="title" weight="semibold">
-                Total
+                {t('orderDetail.total')}
               </Text>
               <Text variant="h2" weight="bold" tabular>
                 {formatMoney(totals.total, currency)}
               </Text>
             </View>
             <Button
-              label="Checkout"
+              label={t('storefront.checkout')}
               size="lg"
               fullWidth
               onPress={() => router.push('/(storefront)/checkout')}

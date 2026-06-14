@@ -1,6 +1,7 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
+import { i18n } from '@/i18n';
 import { toCsv } from '@/lib/csv';
 import { toast } from '@/stores/toast';
 import type { Category } from '@/types/models';
@@ -54,11 +55,11 @@ export async function shareCatalogCsv(
     const file = new File(Paths.cache, `counter-catalog-${Date.now()}.csv`);
     file.write(csv);
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'Export catalog' });
+      await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: i18n.t('products.exportCsv') });
     } else {
-      toast.info('Export saved', 'Sharing is not available on this device.');
+      toast.info(i18n.t('products.exportSaved'), i18n.t('common.sharingUnavailable'));
     }
   } catch {
-    toast.error('Export failed', 'Could not generate the CSV file.');
+    toast.error(i18n.t('products.exportFailed'), i18n.t('products.exportFailedMsg'));
   }
 }

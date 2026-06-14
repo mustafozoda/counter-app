@@ -31,11 +31,10 @@ export function deriveNotifications({
     items.push({
       id: 'low-stock',
       type: 'low-stock',
-      title: low.length === 1 ? 'A product is running low' : `${low.length} products need restocking`,
-      body:
-        low.length === 1
-          ? `${lead.name} is low on stock.`
-          : `${lead.name} and ${low.length - 1} more are low or out.`,
+      titleKey: 'notifications.lowTitle',
+      titleParams: { count: low.length },
+      bodyKey: 'notifications.lowBody',
+      bodyParams: { count: low.length, name: lead.name, more: low.length - 1 },
       read: false,
       createdAt: now.toISOString(),
     });
@@ -57,8 +56,9 @@ export function deriveNotifications({
     items.push({
       id: 'installments-overdue',
       type: 'installment-overdue',
-      title: `${overdue} installment${overdue === 1 ? '' : 's'} overdue`,
-      body: 'Reach out to customers with overdue payment plans.',
+      titleKey: 'notifications.overdueTitle',
+      titleParams: { count: overdue },
+      bodyKey: 'notifications.overdueBody',
       read: false,
       createdAt: now.toISOString(),
     });
@@ -67,8 +67,9 @@ export function deriveNotifications({
     items.push({
       id: 'installments-due',
       type: 'installment-due',
-      title: `${dueSoon} installment${dueSoon === 1 ? '' : 's'} due soon`,
-      body: 'Payments are coming up within the week.',
+      titleKey: 'notifications.dueTitle',
+      titleParams: { count: dueSoon },
+      bodyKey: 'notifications.dueBody',
       read: false,
       createdAt: now.toISOString(),
     });
@@ -80,8 +81,10 @@ export function deriveNotifications({
     items.push({
       id: `order-${latest.id}`,
       type: 'new-order',
-      title: `Order ${latest.number}`,
-      body: `${latest.items.length} item${latest.items.length === 1 ? '' : 's'} sold.`,
+      titleKey: 'pos.order',
+      titleParams: { number: latest.number },
+      bodyKey: 'notifications.orderBody',
+      bodyParams: { count: latest.items.length },
       read: false,
       createdAt: latest.createdAt,
     });

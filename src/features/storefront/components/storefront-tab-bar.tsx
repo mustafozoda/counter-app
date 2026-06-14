@@ -1,5 +1,6 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Heart, Home, Search, ShoppingBag, User, type LucideIcon } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,16 +9,17 @@ import { haptics } from '@/lib/haptics';
 import { useStorefrontCart } from '@/stores/storefront-cart';
 import { useTheme } from '@/theme';
 
-const TAB_META: Record<string, { icon: LucideIcon; label: string }> = {
-  index: { icon: Home, label: 'Shop' },
-  catalog: { icon: Search, label: 'Browse' },
-  cart: { icon: ShoppingBag, label: 'Cart' },
-  wishlist: { icon: Heart, label: 'Saved' },
-  account: { icon: User, label: 'Account' },
+const TAB_META: Record<string, { icon: LucideIcon; labelKey: string }> = {
+  index: { icon: Home, labelKey: 'storefront.navShop' },
+  catalog: { icon: Search, labelKey: 'storefront.navBrowse' },
+  cart: { icon: ShoppingBag, labelKey: 'storefront.navCart' },
+  wishlist: { icon: Heart, labelKey: 'storefront.navSaved' },
+  account: { icon: User, labelKey: 'storefront.navAccount' },
 };
 
 /** Clean customer-facing tab bar (no center FAB — this is shopping, not selling). */
 export function StorefrontTabBar({ state, navigation }: BottomTabBarProps) {
+  const { t } = useTranslation();
   const { colors, shadows } = useTheme();
   const insets = useSafeAreaInsets();
   const cartCount = useStorefrontCart((s) => s.lines.reduce((sum, l) => sum + l.qty, 0));
@@ -45,7 +47,7 @@ export function StorefrontTabBar({ state, navigation }: BottomTabBarProps) {
                 scaleTo={0.9}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
-                accessibilityLabel={meta.label}
+                accessibilityLabel={t(meta.labelKey)}
                 className="flex-1 items-center justify-center gap-1 py-1"
                 onPress={() => {
                   const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -70,7 +72,7 @@ export function StorefrontTabBar({ state, navigation }: BottomTabBarProps) {
                   ) : null}
                 </View>
                 <Text variant="micro" weight={focused ? 'semibold' : 'medium'} tone={focused ? 'accent' : 'tertiary'}>
-                  {meta.label}
+                  {t(meta.labelKey)}
                 </Text>
               </PressableScale>
             );

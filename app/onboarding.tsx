@@ -1,5 +1,6 @@
 import { ArrowLeft } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
@@ -22,40 +23,40 @@ type StepKey = 'name' | 'vertical' | 'currency' | 'logo' | 'product';
 
 interface StepMeta {
   key: StepKey;
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subtitleKey: string;
   skippable: boolean;
 }
 
 const STEPS: StepMeta[] = [
   {
     key: 'name',
-    title: 'Name your store',
-    subtitle: 'This appears on your receipts, storefront and reports.',
+    titleKey: 'onboarding.stepNameTitle',
+    subtitleKey: 'onboarding.stepNameSubtitle',
     skippable: false,
   },
   {
     key: 'vertical',
-    title: 'What do you sell?',
-    subtitle: 'We tailor categories, sizes and attributes to fit.',
+    titleKey: 'onboarding.stepVerticalTitle',
+    subtitleKey: 'onboarding.stepVerticalSubtitle',
     skippable: false,
   },
   {
     key: 'currency',
-    title: 'Your currency',
-    subtitle: 'The money language of your whole business.',
+    titleKey: 'onboarding.stepCurrencyTitle',
+    subtitleKey: 'onboarding.stepCurrencySubtitle',
     skippable: false,
   },
   {
     key: 'logo',
-    title: 'Add your logo',
-    subtitle: 'Give your storefront and receipts a face.',
+    titleKey: 'onboarding.stepLogoTitle',
+    subtitleKey: 'onboarding.stepLogoSubtitle',
     skippable: true,
   },
   {
     key: 'product',
-    title: 'Your first product',
-    subtitle: 'Add one thing you sell — feel the flow of stocking.',
+    titleKey: 'onboarding.stepProductTitle',
+    subtitleKey: 'onboarding.stepProductSubtitle',
     skippable: true,
   },
 ];
@@ -79,6 +80,8 @@ function isStepValid(step: StepKey, draft: SetupDraft): boolean {
 }
 
 function DoneScreen({ storeName, onEnter }: { storeName: string; onEnter: () => void }) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     haptics.success();
   }, []);
@@ -91,23 +94,24 @@ function DoneScreen({ storeName, onEnter }: { storeName: string; onEnter: () => 
         className="mt-10 items-center"
       >
         <Text variant="display" weight="bold" className="text-center">
-          {storeName} is ready
+          {t('onboarding.ready', { name: storeName })}
         </Text>
         <Text variant="body" tone="secondary" className="mt-3 text-center">
-          Your counter is open. Stock it, sell it, watch it grow.
+          {t('onboarding.readyMsg')}
         </Text>
       </Animated.View>
       <Animated.View
         entering={FadeInDown.delay(STAGGER_MS * 7).springify().damping(18)}
         className="mt-12 w-full"
       >
-        <Button label="Open my store" size="lg" fullWidth onPress={onEnter} />
+        <Button label={t('onboarding.openStore')} size="lg" fullWidth onPress={onEnter} />
       </Animated.View>
     </Screen>
   );
 }
 
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<SetupDraft>(initialDraft);
   const [done, setDone] = useState(false);
@@ -162,7 +166,7 @@ export default function OnboardingScreen() {
         {stepIndex > 0 ? (
           <IconButton
             icon={ArrowLeft}
-            accessibilityLabel="Previous step"
+            accessibilityLabel={t('onboarding.prevStep')}
             onPress={() => setStepIndex((i) => Math.max(0, i - 1))}
           />
         ) : (
@@ -178,10 +182,10 @@ export default function OnboardingScreen() {
 
       <Animated.View key={step.key} entering={FadeInRight.springify().damping(20)} className="mt-10 flex-1">
         <Text variant="display" weight="bold">
-          {step.title}
+          {t(step.titleKey)}
         </Text>
         <Text variant="body" tone="secondary" className="mt-3">
-          {step.subtitle}
+          {t(step.subtitleKey)}
         </Text>
         <View className="mt-8 flex-1">
           {step.key === 'name' && <NameStep draft={draft} patch={patch} />}
@@ -194,17 +198,17 @@ export default function OnboardingScreen() {
 
       <View className="gap-3 pb-6">
         <Button
-          label={isLast ? 'Finish setup' : 'Continue'}
+          label={isLast ? t('onboarding.finish') : t('onboarding.continue')}
           size="lg"
           fullWidth
           disabled={!valid}
           onPress={goNext}
         />
         {step.skippable ? (
-          <Button label="Skip for now" variant="ghost" fullWidth onPress={skip} />
+          <Button label={t('onboarding.skip')} variant="ghost" fullWidth onPress={skip} />
         ) : null}
         {stepIndex === 0 ? (
-          <Button label="Sign out" variant="ghost" fullWidth onPress={signOut} />
+          <Button label={t('onboarding.signOut')} variant="ghost" fullWidth onPress={signOut} />
         ) : null}
       </View>
     </Screen>

@@ -16,7 +16,8 @@ import {
 
 export interface StoreVertical {
   id: string;
-  label: string;
+  /** i18n key (in the `vertical` namespace) resolved with `t()` at render. */
+  labelKey: string;
   icon: LucideIcon;
 }
 
@@ -26,16 +27,16 @@ export interface StoreVertical {
  * age range) but never constrains the store later.
  */
 export const STORE_VERTICALS: StoreVertical[] = [
-  { id: 'kids-clothing', label: "Kids' clothing", icon: Baby },
-  { id: 'apparel', label: 'Apparel', icon: Shirt },
-  { id: 'shoes', label: 'Shoes', icon: Footprints },
-  { id: 'toys', label: 'Toys & games', icon: ToyBrick },
-  { id: 'electronics', label: 'Electronics', icon: Laptop },
-  { id: 'beauty', label: 'Beauty', icon: Sparkles },
-  { id: 'jewelry', label: 'Jewelry', icon: Gem },
-  { id: 'grocery', label: 'Grocery', icon: ShoppingBasket },
-  { id: 'home', label: 'Home & living', icon: Armchair },
-  { id: 'books', label: 'Books & stationery', icon: BookOpen },
-  { id: 'sports', label: 'Sports', icon: Dumbbell },
-  { id: 'other', label: 'Something else', icon: Store },
+  { id: 'kids-clothing', labelKey: 'vertical.kidsClothing', icon: Baby },
+  { id: 'apparel', labelKey: 'vertical.apparel', icon: Shirt },
+  { id: 'shoes', labelKey: 'vertical.shoes', icon: Footprints },
+  { id: 'toys', labelKey: 'vertical.toys', icon: ToyBrick },
+  { id: 'electronics', labelKey: 'vertical.electronics', icon: Laptop },
+  { id: 'beauty', labelKey: 'vertical.beauty', icon: Sparkles },
+  { id: 'jewelry', labelKey: 'vertical.jewelry', icon: Gem },
+  { id: 'grocery', labelKey: 'vertical.grocery', icon: ShoppingBasket },
+  { id: 'home', labelKey: 'vertical.home', icon: Armchair },
+  { id: 'books', labelKey: 'vertical.books', icon: BookOpen },
+  { id: 'sports', labelKey: 'vertical.sports', icon: Dumbbell },
+  { id: 'other', labelKey: 'vertical.other', icon: Store },
 ];

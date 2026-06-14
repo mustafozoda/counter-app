@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Store, Tag, X } from 'lucide-react-native';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,7 @@ import { brandGradient } from '@/theme';
 
 export default function StorefrontHome() {
   const router = useRouter();
+  const { t } = useTranslation();
   const width = useContentWidth();
   const store = useStoreProfile((s) => s.store);
   const currency = store?.currencyCode ?? 'TJS';
@@ -43,16 +45,16 @@ export default function StorefrontHome() {
           <Logo size={40} letter={(store?.name.trim()[0] ?? 'C').toUpperCase()} />
           <View>
             <Text variant="caption" tone="tertiary">
-              Welcome to
+              {t('storefront.welcomeTo')}
             </Text>
             <Text variant="title" weight="bold">
-              {store?.name ?? 'Our store'}
+              {store?.name ?? t('storefront.ourStore')}
             </Text>
           </View>
         </View>
         <IconButton
           icon={X}
-          accessibilityLabel="Exit storefront preview"
+          accessibilityLabel={t('storefront.exitPreview')}
           onPress={() => router.replace('/(merchant)/(tabs)')}
         />
       </View>
@@ -71,23 +73,23 @@ export default function StorefrontHome() {
                 <View className="mb-2 flex-row items-center gap-1.5">
                   <Tag size={14} color="#FFFFFF" strokeWidth={2.5} />
                   <Text variant="micro" weight="bold" tone="inverse" className="opacity-90">
-                    LIMITED OFFER
+                    {t('storefront.limitedOffer')}
                   </Text>
                 </View>
                 <Text variant="display" weight="bold" tone="inverse">
                   {promotionSummary(livePromo)}
                 </Text>
                 <Text variant="body" tone="inverse" className="mt-1 opacity-90">
-                  {livePromo.code ? `Use code ${livePromo.code} at checkout` : livePromo.name}
+                  {livePromo.code ? t('storefront.useCode', { code: livePromo.code }) : livePromo.name}
                 </Text>
               </>
             ) : (
               <>
                 <Text variant="display" weight="bold" tone="inverse">
-                  New season,{'\n'}new finds
+                  {t('storefront.heroTitle')}
                 </Text>
                 <Text variant="body" tone="inverse" className="mt-2 opacity-90">
-                  Fresh stock, picked with care.
+                  {t('storefront.heroSubtitle')}
                 </Text>
               </>
             )}
@@ -98,7 +100,7 @@ export default function StorefrontHome() {
         {categories.length > 0 ? (
           <Animated.View entering={FadeInDown.delay(60).springify().damping(18)} className="mt-6">
             <Text variant="h2" weight="semibold" className="px-5">
-              Shop by category
+              {t('storefront.shopByCategory')}
             </Text>
             <ScrollView
               horizontal
@@ -126,11 +128,11 @@ export default function StorefrontHome() {
         <Animated.View entering={FadeInDown.delay(120).springify().damping(18)} className="mt-4">
           <View className="flex-row items-center justify-between px-5">
             <Text variant="h2" weight="semibold">
-              Featured
+              {t('storefront.featured')}
             </Text>
             <IconButton
               icon={ChevronRight}
-              accessibilityLabel="See all products"
+              accessibilityLabel={t('storefront.seeAll')}
               onPress={() => router.push('/(storefront)/(tabs)/catalog')}
             />
           </View>
@@ -142,7 +144,7 @@ export default function StorefrontHome() {
               ))}
             </View>
           ) : featured.length === 0 ? (
-            <EmptyState icon={Store} title="Nothing in stock yet" message="Check back soon — new products are on the way." />
+            <EmptyState icon={Store} title={t('storefront.emptyStockTitle')} message={t('storefront.emptyStockMsg')} />
           ) : (
             <View className="flex-row flex-wrap justify-between px-5 pt-2" style={{ gap: 12 }}>
               {featured.map((product) => (
@@ -159,7 +161,7 @@ export default function StorefrontHome() {
         </Animated.View>
 
         <View className="mt-6 items-center">
-          <Badge label="Storefront preview" tone="accent" />
+          <Badge label={t('storefront.previewBadge')} tone="accent" />
         </View>
       </ScrollView>
     </SafeAreaView>

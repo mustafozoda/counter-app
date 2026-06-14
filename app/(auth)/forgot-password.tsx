@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, KeyRound, Mail } from 'lucide-react-native';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -12,6 +13,7 @@ import { STAGGER_MS, useTheme } from '@/theme';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const {
@@ -26,14 +28,14 @@ export default function ForgotPasswordScreen() {
   const onSubmit = handleSubmit(async (values) => {
     // Mock reset; the Supabase adapter will send a real email later.
     await new Promise((r) => setTimeout(r, 600));
-    toast.success('Reset link sent', `Check ${values.email} for instructions.`);
+    toast.success(t('auth.resetSent'), t('auth.resetSentBody', { email: values.email }));
     router.back();
   });
 
   return (
     <Screen scroll keyboardAvoid contentClassName="flex-grow pb-10">
       <View className="mt-2 flex-row items-center">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Go back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('auth.goBack')} onPress={() => router.back()} />
       </View>
 
       <Animated.View entering={FadeInDown.springify().damping(18)} className="mt-6">
@@ -41,10 +43,10 @@ export default function ForgotPasswordScreen() {
           <KeyRound size={28} color={colors.primary} strokeWidth={1.75} />
         </View>
         <Text variant="display" weight="bold" className="mt-6">
-          Reset password
+          {t('auth.resetTitle')}
         </Text>
         <Text variant="body" tone="secondary" className="mt-3">
-          Enter the email you use for Counter and we&apos;ll send you a reset link.
+          {t('auth.resetSubtitle')}
         </Text>
       </Animated.View>
 
@@ -57,12 +59,12 @@ export default function ForgotPasswordScreen() {
           name="email"
           render={({ field: { value, onChange, onBlur }, fieldState }) => (
             <TextField
-              label="Email"
+              label={t('auth.email')}
               icon={Mail}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={fieldState.error?.message}
+              error={fieldState.error?.message ? t(fieldState.error.message) : undefined}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
@@ -71,7 +73,7 @@ export default function ForgotPasswordScreen() {
             />
           )}
         />
-        <Button label="Send reset link" size="lg" fullWidth loading={isSubmitting} onPress={onSubmit} />
+        <Button label={t('auth.sendReset')} size="lg" fullWidth loading={isSubmitting} onPress={onSubmit} />
       </Animated.View>
     </Screen>
   );

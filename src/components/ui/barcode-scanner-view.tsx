@@ -1,6 +1,7 @@
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { Flashlight, ScanLine, Keyboard as KeyboardIcon } from 'lucide-react-native';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -27,6 +28,7 @@ const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', '
  * manual-entry fallback (simulators, damaged labels, denied permission).
  */
 export function BarcodeScannerView({ onScanned, cooldownMs = 1600, hint }: BarcodeScannerViewProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [torch, setTorch] = useState(false);
@@ -58,10 +60,10 @@ export function BarcodeScannerView({ onScanned, cooldownMs = 1600, hint }: Barco
         {permission.granted ? (
           <View className="gap-4">
             <Text variant="h2" weight="semibold">
-              Enter barcode
+              {t('scan.enterBarcode')}
             </Text>
             <TextField
-              label="Barcode or SKU"
+              label={t('scan.barcodeOrSku')}
               value={manualCode}
               onChangeText={setManualCode}
               keyboardType="default"
@@ -70,15 +72,15 @@ export function BarcodeScannerView({ onScanned, cooldownMs = 1600, hint }: Barco
               returnKeyType="done"
               onSubmitEditing={submitManual}
             />
-            <Button label="Find" size="lg" fullWidth onPress={submitManual} disabled={manualCode.trim() === ''} />
-            <Button label="Back to camera" variant="ghost" fullWidth onPress={() => setManual(false)} />
+            <Button label={t('scan.find')} size="lg" fullWidth onPress={submitManual} disabled={manualCode.trim() === ''} />
+            <Button label={t('scan.backToCamera')} variant="ghost" fullWidth onPress={() => setManual(false)} />
           </View>
         ) : (
           <EmptyState
             icon={ScanLine}
-            title="Camera access needed"
-            message="Counter scans barcodes with the camera. You can also type codes manually."
-            actionLabel={permission.canAskAgain ? 'Allow camera' : 'Type a code instead'}
+            title={t('scan.cameraNeeded')}
+            message={t('scan.cameraNeededMsg')}
+            actionLabel={permission.canAskAgain ? t('scan.allowCamera') : t('scan.typeInstead')}
             onAction={() => {
               if (permission.canAskAgain) void requestPermission();
               else setManual(true);
@@ -105,19 +107,19 @@ export function BarcodeScannerView({ onScanned, cooldownMs = 1600, hint }: Barco
           style={{ borderColor: colors.primary }}
         />
         <Text variant="caption" tone="inverse" className="mt-4 text-center opacity-90">
-          {hint ?? 'Line a barcode up inside the frame'}
+          {hint ?? t('scan.frameHint')}
         </Text>
       </View>
       <View className="absolute bottom-6 left-0 right-0 flex-row items-center justify-center gap-4">
         <IconButton
           icon={Flashlight}
-          accessibilityLabel={torch ? 'Turn torch off' : 'Turn torch on'}
+          accessibilityLabel={torch ? t('scan.torchOff') : t('scan.torchOn')}
           variant={torch ? 'tonal' : 'surface'}
-          onPress={() => setTorch((t) => !t)}
+          onPress={() => setTorch((prev) => !prev)}
         />
         <IconButton
           icon={KeyboardIcon}
-          accessibilityLabel="Type a code manually"
+          accessibilityLabel={t('scan.typeManually')}
           variant="surface"
           onPress={() => setManual(true)}
         />

@@ -8,6 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -45,6 +46,7 @@ const ROUTE: Partial<Record<NotificationType, string>> = {
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   const productsQuery = useProducts();
@@ -65,9 +67,9 @@ export default function NotificationsScreen() {
   return (
     <Screen padded={false}>
       <View className="flex-row items-center gap-3 px-5 pt-2">
-        <IconButton icon={ArrowLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
         <Text variant="h1" weight="bold">
-          Notifications
+          {t('notifications.title')}
         </Text>
       </View>
 
@@ -81,8 +83,8 @@ export default function NotificationsScreen() {
         <View className="flex-1 justify-center pb-16">
           <EmptyState
             icon={BellOff}
-            title="You're all caught up"
-            message="Low stock, new orders and installment reminders will show up here."
+            title={t('notifications.emptyTitle')}
+            message={t('notifications.emptyMsg')}
           />
         </View>
       ) : (
@@ -106,10 +108,10 @@ export default function NotificationsScreen() {
                   </View>
                   <View className="flex-1">
                     <Text variant="body" weight="semibold">
-                      {notification.title}
+                      {t(notification.titleKey, notification.titleParams)}
                     </Text>
                     <Text variant="caption" tone="tertiary" numberOfLines={2}>
-                      {notification.body}
+                      {t(notification.bodyKey, notification.bodyParams)}
                     </Text>
                     <Text variant="micro" tone="tertiary" className="mt-0.5">
                       {formatDateTime(new Date(notification.createdAt))}
@@ -120,7 +122,7 @@ export default function NotificationsScreen() {
             );
           })}
           <Text variant="micro" tone="tertiary" className="mt-2 text-center">
-            Push delivery activates when connected to a backend.
+            {t('notifications.pushNote')}
           </Text>
         </ScrollView>
       )}

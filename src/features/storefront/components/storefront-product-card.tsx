@@ -1,4 +1,5 @@
 import { Heart } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
 
 import { Badge, Card, Text } from '@/components/ui';
@@ -23,6 +24,7 @@ export function StorefrontProductCard({
   width,
   onPress,
 }: StorefrontProductCardProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const wished = useWishlist((s) => s.productIds.includes(product.id));
   const toggle = useWishlist((s) => s.toggle);
@@ -40,7 +42,7 @@ export function StorefrontProductCard({
           }}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={wished ? 'Remove from wishlist' : 'Add to wishlist'}
+          accessibilityLabel={wished ? t('storefront.wishlistRemove') : t('storefront.wishlistAdd')}
           className="absolute right-2 top-2 h-9 w-9 items-center justify-center rounded-full bg-surface/90"
         >
           <Heart
@@ -52,7 +54,7 @@ export function StorefrontProductCard({
         </Pressable>
         {out ? (
           <View className="absolute bottom-2 left-2">
-            <Badge label="Sold out" tone="neutral" />
+            <Badge label={t('storefront.soldOut')} tone="neutral" />
           </View>
         ) : null}
       </View>
@@ -66,7 +68,7 @@ export function StorefrontProductCard({
           </Text>
         ) : null}
         <Text variant="caption" weight="semibold" tone="accent" tabular>
-          {product.variants.length > 1 ? `from ${formatMoney(minPrice, currency)}` : formatMoney(minPrice, currency)}
+          {product.variants.length > 1 ? t('storefront.fromPrice', { price: formatMoney(minPrice, currency) }) : formatMoney(minPrice, currency)}
         </Text>
       </View>
     </Card>

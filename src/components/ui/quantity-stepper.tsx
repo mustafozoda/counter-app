@@ -1,4 +1,5 @@
 import { Minus, Plus } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { cn } from '@/lib/cn';
@@ -23,6 +24,7 @@ export function QuantityStepper({
   max = Number.MAX_SAFE_INTEGER,
   className,
 }: QuantityStepperProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const canDecrement = value > min;
   const canIncrement = value < max;
@@ -63,7 +65,7 @@ export function QuantityStepper({
       accessibilityRole="adjustable"
       accessibilityValue={{ now: value }}
     >
-      <StepButton icon={Minus} enabled={canDecrement} onPress={() => onChange(value - 1)} label="Decrease" />
+      <StepButton icon={Minus} enabled={canDecrement} onPress={() => onChange(value - 1)} label={t('actions.decrease')} />
       <View className="min-w-12 items-center">
         <AnimatedNumber
           value={value}
@@ -71,7 +73,7 @@ export function QuantityStepper({
           style={textStyle('title', 'semibold', { tabular: true })}
         />
       </View>
-      <StepButton icon={Plus} enabled={canIncrement} onPress={() => onChange(value + 1)} label="Increase" />
+      <StepButton icon={Plus} enabled={canIncrement} onPress={() => onChange(value + 1)} label={t('actions.increase')} />
     </View>
   );
 }

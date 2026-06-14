@@ -1,6 +1,7 @@
 import { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Check, Search } from 'lucide-react-native';
 import { forwardRef, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { PressableScale, Sheet, Text, type SheetRef } from '@/components/ui';
@@ -17,6 +18,7 @@ export const CurrencySheet = forwardRef<SheetRef, CurrencySheetProps>(function C
   { selected, onSelect },
   ref,
 ) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
 
@@ -61,17 +63,17 @@ export const CurrencySheet = forwardRef<SheetRef, CurrencySheetProps>(function C
   };
 
   return (
-    <Sheet ref={ref} title="Currency" snapPoints={['75%']} raw onDismiss={() => setQuery('')}>
+    <Sheet ref={ref} title={t('settings.currency')} snapPoints={['75%']} raw onDismiss={() => setQuery('')}>
       <View className="mx-5 my-3 flex-row items-center gap-2 rounded-full bg-surface-sunken px-4 dark:bg-surface">
         <Search size={18} color={colors.inkTertiary} strokeWidth={2} />
         <BottomSheetTextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search currencies"
+          placeholder={t('onboarding.searchCurrencies')}
           placeholderTextColor={colors.inkTertiary}
           style={[textStyle('body'), { flex: 1, height: 44, color: colors.ink }]}
           autoCapitalize="none"
-          accessibilityLabel="Search currencies"
+          accessibilityLabel={t('onboarding.searchCurrencies')}
         />
       </View>
       <BottomSheetFlatList
