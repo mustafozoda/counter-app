@@ -23,6 +23,7 @@ import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
 import { I18nManager, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { queryClient } from '@/api/query-client';
 import { ToastHost } from '@/components/ui';
@@ -98,26 +99,28 @@ export default function RootLayout() {
       style={isWeb ? { flex: 1, alignItems: 'center', backgroundColor: '#000000' } : { flex: 1 }}
     >
       <View style={isWeb ? { flex: 1, width: '100%', maxWidth: APP_FRAME_WIDTH } : { flex: 1 }}>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider value={navigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>
-            <BottomSheetModalProvider>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Protected guard={!signedIn}>
-                  <Stack.Screen name="(auth)" />
-                </Stack.Protected>
-                <Stack.Protected guard={signedIn && !onboarded}>
-                  <Stack.Screen name="onboarding" />
-                </Stack.Protected>
-                <Stack.Protected guard={signedIn && onboarded}>
-                  <Stack.Screen name="(merchant)" />
-                  <Stack.Screen name="(storefront)" />
-                </Stack.Protected>
-              </Stack>
-              <ToastHost />
-              <StatusBar style="auto" />
-            </BottomSheetModalProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
+        <KeyboardProvider>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider value={navigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>
+              <BottomSheetModalProvider>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Protected guard={!signedIn}>
+                    <Stack.Screen name="(auth)" />
+                  </Stack.Protected>
+                  <Stack.Protected guard={signedIn && !onboarded}>
+                    <Stack.Screen name="onboarding" />
+                  </Stack.Protected>
+                  <Stack.Protected guard={signedIn && onboarded}>
+                    <Stack.Screen name="(merchant)" />
+                    <Stack.Screen name="(storefront)" />
+                  </Stack.Protected>
+                </Stack>
+                <ToastHost />
+                <StatusBar style="auto" />
+              </BottomSheetModalProvider>
+            </ThemeProvider>
+          </QueryClientProvider>
+        </KeyboardProvider>
       </View>
     </GestureHandlerRootView>
   );
