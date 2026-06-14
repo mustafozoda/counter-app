@@ -169,7 +169,12 @@ export default function OrderDetailScreen() {
                 {FULFILLMENT_FLOW.map((status, index) => {
                   const reached = flowIndex >= index;
                   return (
-                    <View key={status} className="flex-1 flex-row items-center">
+                    <View
+                      key={status}
+                      className={`flex-row items-center ${
+                        index < FULFILLMENT_FLOW.length - 1 ? 'flex-1' : ''
+                      }`}
+                    >
                       <View
                         className={`h-3 w-3 rounded-full ${reached ? 'bg-primary' : 'bg-surface-sunken dark:bg-surface'}`}
                       />
