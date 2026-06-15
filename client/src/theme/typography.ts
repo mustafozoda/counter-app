@@ -57,15 +57,45 @@ interface VariantSpec {
 }
 
 export const textVariants: Record<TextVariant, VariantSpec> = {
-  displayLg: { fontSize: 40, lineHeight: 44, letterSpacing: -1, role: 'display', defaultWeight: 'semibold' },
-  display: { fontSize: 34, lineHeight: 38, letterSpacing: -0.8, role: 'display', defaultWeight: 'semibold' },
-  displaySm: { fontSize: 28, lineHeight: 32, letterSpacing: -0.5, role: 'display', defaultWeight: 'semibold' },
+  displayLg: {
+    fontSize: 40,
+    lineHeight: 44,
+    letterSpacing: -1,
+    role: 'display',
+    defaultWeight: 'semibold',
+  },
+  display: {
+    fontSize: 34,
+    lineHeight: 38,
+    letterSpacing: -0.8,
+    role: 'display',
+    defaultWeight: 'semibold',
+  },
+  displaySm: {
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: -0.5,
+    role: 'display',
+    defaultWeight: 'semibold',
+  },
   h1: { fontSize: 24, lineHeight: 30, letterSpacing: -0.4, role: 'sans', defaultWeight: 'bold' },
-  h2: { fontSize: 20, lineHeight: 26, letterSpacing: -0.2, role: 'sans', defaultWeight: 'semibold' },
+  h2: {
+    fontSize: 20,
+    lineHeight: 26,
+    letterSpacing: -0.2,
+    role: 'sans',
+    defaultWeight: 'semibold',
+  },
   title: { fontSize: 17, lineHeight: 22, role: 'sans', defaultWeight: 'semibold' },
   body: { fontSize: 15, lineHeight: 21, role: 'sans', defaultWeight: 'regular' },
   caption: { fontSize: 13, lineHeight: 18, role: 'sans', defaultWeight: 'regular' },
-  micro: { fontSize: 11, lineHeight: 14, letterSpacing: 0.3, role: 'sans', defaultWeight: 'medium' },
+  micro: {
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.3,
+    role: 'sans',
+    defaultWeight: 'medium',
+  },
 };
 
 export function textStyle(

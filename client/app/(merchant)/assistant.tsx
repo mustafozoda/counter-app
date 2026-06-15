@@ -167,7 +167,7 @@ export default function AssistantScreen() {
 
       <KeyboardAvoidingView
         behavior="padding"
-        keyboardVerticalOffset={insets.top + 44}
+        keyboardVerticalOffset={0} // insets.top + 44
         style={{ flex: 1, backgroundColor: colors.background }}
       >
         {messages.length === 0 ? (
@@ -189,7 +189,8 @@ export default function AssistantScreen() {
 
         <View
           className="bg-background"
-          style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }}
+          style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 4 }}
+          // style={{ paddingBottom: 0 }}
         >
           <Composer busy={busy} onSend={send} onStop={stop} />
         </View>
