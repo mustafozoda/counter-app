@@ -1,7 +1,7 @@
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Eye, EyeOff, type LucideIcon } from 'lucide-react-native';
 import { forwardRef, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, TextInput, View, type TextInputProps } from 'react-native';
+import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 import Animated, {
   interpolate,
   interpolateColor,
@@ -152,12 +152,14 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     ...inputProps,
   };
 
-  // Inside a Sheet on iOS: BottomSheetTextInput notifies gorhom about keyboard
-  // height so the sheet lifts interactively. On Android the OS already handles
-  // the pan via android_keyboardInputMode="adjustPan", so we skip the wrapper
-  // entirely — it's the main source of focus-loss re-renders that cause the
-  // text-duplication bug on the New Architecture.
-  const useBottomSheetInput = insideSheet && Platform.OS === 'ios';
+  // Inside a Sheet, use BottomSheetTextInput on BOTH platforms: it registers the
+  // focused input with gorhom (sets its keyboard `target`), which is what makes
+  // the sheet lift interactively above the keyboard. This is required under
+  // edge-to-edge on Android, where the OS no longer pans the window for the
+  // keyboard — a plain TextInput would just sit hidden behind it. The field's
+  // uncontrolled defaultValue + setNativeProps wiring keeps the New Arch
+  // text-duplication bug away (iOS already runs this exact path New-Arch-clean).
+  const useBottomSheetInput = insideSheet;
 
   return (
     <View className={cn('gap-1.5', containerClassName)}>
