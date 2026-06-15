@@ -16,6 +16,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, PressableScale, Text, useSheetRef } from '@/components/ui';
+import { formatDayLabel } from '@/lib/format';
 import { createLocalId } from '@/lib/id';
 import { toast } from '@/stores/toast';
 import { useTheme } from '@/theme';
@@ -63,6 +64,18 @@ function AssistantHero({ onPick }: { onPick: (prompt: string) => void }) {
   );
 }
 
+function DaySeparator({ label }: { label: string }) {
+  return (
+    <View className="my-1 items-center">
+      <View className="rounded-full bg-surface-sunken px-3 py-1 dark:bg-surface-elevated">
+        <Text variant="micro" weight="medium" tone="tertiary">
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function AssistantScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -79,13 +92,27 @@ export default function AssistantScreen() {
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const messages = active?.messages ?? [];
 
-  // The latest assistant reply is the only one that can be regenerated.
+  // Only the latest reply can be regenerated; only the latest prompt edited.
   const lastAssistantId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === 'assistant') return messages[i].id;
     }
     return null;
   }, [messages]);
+  const lastUserId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') return messages[i].id;
+    }
+    return null;
+  }, [messages]);
+
+  const lastMessage = messages[messages.length - 1];
+  const showFollowUps =
+    !busy &&
+    !!lastMessage &&
+    lastMessage.role === 'assistant' &&
+    lastMessage.content.length > 0 &&
+    !lastMessage.error;
 
   // Keep the latest messages in view when the keyboard opens: the window
   // resizes, so without this the bottom of the chat hides behind the keyboard.
@@ -97,7 +124,7 @@ export default function AssistantScreen() {
     return () => sub.remove();
   }, []);
 
-  // Shared streaming pipeline for both first sends and regenerations.
+  // Shared streaming pipeline for first sends, regenerations and edits.
   const streamInto = useCallback(
     (conversationId: string, assistantId: string, history: ChatTurn[]) => {
       setBusy(true);
@@ -187,6 +214,37 @@ export default function AssistantScreen() {
     streamInto(conversationId, assistantId, history);
   }, [busy, streamInto]);
 
+  // Edit a past user message: rewrite it, drop everything after, and re-answer.
+  const editAndResend = useCallback(
+    (messageId: string, text: string) => {
+      if (busy) return;
+      const store = useAssistantStore.getState();
+      const conversationId = store.activeId;
+      if (!conversationId) return;
+
+      store.patchMessage(conversationId, messageId, { content: text });
+      store.truncateAfterMessage(conversationId, messageId);
+
+      const assistantId = createLocalId();
+      store.addMessage(conversationId, {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        createdAt: new Date().toISOString(),
+      });
+
+      const conversation = useAssistantStore
+        .getState()
+        .conversations.find((c) => c.id === conversationId);
+      const history: ChatTurn[] = (conversation?.messages ?? [])
+        .filter((m) => m.content.trim().length > 0)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      streamInto(conversationId, assistantId, history);
+    },
+    [busy, streamInto],
+  );
+
   const copyMessage = useCallback(
     (text: string) => {
       void Clipboard.setStringAsync(text);
@@ -262,15 +320,47 @@ export default function AssistantScreen() {
             scrollEventThrottle={16}
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
           >
-            {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                onCopy={copyMessage}
-                onRegenerate={regenerate}
-                canRegenerate={message.id === lastAssistantId && !busy}
-              />
-            ))}
+            {messages.map((message, index) => {
+              const prev = messages[index - 1];
+              const showDay =
+                !prev ||
+                new Date(prev.createdAt).toDateString() !==
+                  new Date(message.createdAt).toDateString();
+              return (
+                <View key={message.id} className="gap-3.5">
+                  {showDay ? <DaySeparator label={formatDayLabel(new Date(message.createdAt))} /> : null}
+                  <MessageBubble
+                    message={message}
+                    onCopy={copyMessage}
+                    onRegenerate={regenerate}
+                    canRegenerate={message.id === lastAssistantId && !busy}
+                    onEdit={editAndResend}
+                    canEdit={message.id === lastUserId && !busy}
+                  />
+                </View>
+              );
+            })}
+
+            {showFollowUps ? (
+              <View className="flex-row flex-wrap gap-2 pl-10">
+                {[t('assistant.followUp1'), t('assistant.followUp2'), t('assistant.followUp3')].map(
+                  (f) => (
+                    <PressableScale
+                      key={f}
+                      scaleTo={0.97}
+                      haptic="tap"
+                      onPress={() => send(f)}
+                      accessibilityRole="button"
+                      className="rounded-full border border-hairline bg-surface px-3 py-1.5 dark:bg-surface-elevated"
+                    >
+                      <Text variant="caption" tone="secondary">
+                        {f}
+                      </Text>
+                    </PressableScale>
+                  ),
+                )}
+              </View>
+            ) : null}
           </ScrollView>
         )}
 

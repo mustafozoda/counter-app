@@ -37,6 +37,8 @@ interface AssistantState {
   addMessage: (conversationId: string, message: ChatMessage) => void;
   appendToMessage: (conversationId: string, messageId: string, delta: string) => void;
   patchMessage: (conversationId: string, messageId: string, patch: Partial<ChatMessage>) => void;
+  /** Drop every message after the given one (used when editing & resending). */
+  truncateAfterMessage: (conversationId: string, messageId: string) => void;
 
   setHasHydrated: (value: boolean) => void;
 }
@@ -112,6 +114,19 @@ export const useAssistantStore = create<AssistantState>()(
             ...c,
             messages: c.messages.map((m) => (m.id === messageId ? { ...m, ...patch } : m)),
           })),
+        ),
+
+      truncateAfterMessage: (conversationId, messageId) =>
+        set((s) =>
+          mapConversation(s, conversationId, (c) => {
+            const idx = c.messages.findIndex((m) => m.id === messageId);
+            if (idx < 0) return c;
+            return {
+              ...c,
+              messages: c.messages.slice(0, idx + 1),
+              updatedAt: new Date().toISOString(),
+            };
+          }),
         ),
 
       setHasHydrated: (value) => set({ hasHydrated: value }),
