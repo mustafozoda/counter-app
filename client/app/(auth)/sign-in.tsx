@@ -29,8 +29,9 @@ export default function SignInScreen() {
     try {
       await signIn(values.email, values.password);
       haptics.success();
-    } catch {
-      toast.error(t('auth.signInFailed'), t('auth.signInFailedBody'));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      toast.error(t('auth.signInFailed'), message || t('auth.signInFailedBody'));
     }
   });
 
