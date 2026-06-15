@@ -117,7 +117,8 @@ export default function AssistantScreen() {
   // Only the latest reply can be regenerated; only the latest prompt edited.
   const lastAssistantId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'assistant') return messages[i].id;
+      const message = messages[i];
+      if (message?.role === 'assistant') return message.id;
     }
     return null;
   }, [messages]);
@@ -215,12 +216,13 @@ export default function AssistantScreen() {
 
     let lastIdx = -1;
     for (let i = conversation.messages.length - 1; i >= 0; i--) {
-      if (conversation.messages[i].role === 'assistant') {
+      if (conversation.messages[i]?.role === 'assistant') {
         lastIdx = i;
         break;
       }
     }
-    if (lastIdx < 0) return;
+    const assistantMessage = lastIdx >= 0 ? conversation.messages[lastIdx] : undefined;
+    if (!assistantMessage) return;
 
     const assistantId = conversation.messages[lastIdx].id;
     const history = toWire(conversation.messages.slice(0, lastIdx));

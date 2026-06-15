@@ -1,15 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { CartLine, CartTotals, PaymentEntry } from '@/features/pos/totals';
+import { getActiveStoreId } from '@/lib/active-store';
 import { createLocalId } from '@/lib/id';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type {
   FulfillmentStatus,
   Id,
   Order,
+  OrderItem,
   Payment,
+  PaymentStatus,
   Refund,
   RefundItem,
   Transaction,
+  TransactionType,
 } from '@/types/models';
 
 import { customersApi } from './customers';
@@ -273,4 +278,231 @@ export class LocalOrdersApi implements OrdersApi {
   }
 }
 
-export const ordersApi: OrdersApi = new LocalOrdersApi();
+// ---------------------------------------------------------------------------
+// Supabase implementation
+// ---------------------------------------------------------------------------
+
+interface OrderItemRow {
+  id: string;
+  variant_id: string | null;
+  product_name: string;
+  variant_label: string;
+  qty: number;
+  unit_price: number;
+  line_total: number;
+}
+
+interface PaymentRow {
+  id: string;
+  order_id: string;
+  method: Payment['method'];
+  amount: number;
+  status: Payment['status'];
+  ref: string | null;
+  created_at: string;
+}
+
+interface RefundRow {
+  id: string;
+  order_id: string;
+  items: RefundItem[] | null;
+  amount: number;
+  restocked: boolean;
+  reason: string | null;
+  created_at: string;
+}
+
+interface OrderRow {
+  id: string;
+  number: string;
+  channel: Order['channel'];
+  customer_id: string | null;
+  subtotal: number;
+  discount: number;
+  tax: number;
+  total: number;
+  payment_status: PaymentStatus;
+  fulfillment_status: FulfillmentStatus;
+  created_at: string;
+  order_items?: OrderItemRow[];
+  payments?: PaymentRow[];
+  refunds?: RefundRow[];
+}
+
+interface TransactionRow {
+  id: string;
+  type: TransactionType;
+  category: string;
+  amount: number;
+  note: string;
+  date: string;
+  linked_order_id: string | null;
+  receipt_uri: string | null;
+}
+
+const toOrderItem = (row: OrderItemRow): OrderItem => ({
+  id: row.id,
+  variantId: row.variant_id ?? '',
+  productName: row.product_name,
+  variantLabel: row.variant_label,
+  qty: row.qty,
+  unitPrice: Number(row.unit_price),
+  lineTotal: Number(row.line_total),
+});
+
+const toPayment = (row: PaymentRow): Payment => ({
+  id: row.id,
+  orderId: row.order_id,
+  method: row.method,
+  amount: Number(row.amount),
+  status: row.status,
+  ref: row.ref,
+  createdAt: row.created_at,
+});
+
+const toRefund = (row: RefundRow): Refund => ({
+  id: row.id,
+  orderId: row.order_id,
+  items: row.items ?? [],
+  amount: Number(row.amount),
+  restocked: row.restocked,
+  reason: row.reason,
+  createdAt: row.created_at,
+});
+
+const toOrder = (row: OrderRow): OrderWithPayments => ({
+  id: row.id,
+  number: row.number,
+  channel: row.channel,
+  customerId: row.customer_id,
+  items: (row.order_items ?? []).map(toOrderItem),
+  subtotal: Number(row.subtotal),
+  discount: Number(row.discount),
+  tax: Number(row.tax),
+  total: Number(row.total),
+  paymentStatus: row.payment_status,
+  fulfillmentStatus: row.fulfillment_status,
+  createdAt: row.created_at,
+  payments: (row.payments ?? []).map(toPayment),
+  refunds: (row.refunds ?? []).map(toRefund),
+});
+
+const toTransaction = (row: TransactionRow): Transaction => ({
+  id: row.id,
+  type: row.type,
+  category: row.category,
+  amount: Number(row.amount),
+  note: row.note,
+  date: row.date,
+  linkedOrderId: row.linked_order_id,
+  receiptUri: row.receipt_uri,
+});
+
+const ORDER_SELECT = '*, order_items(*), payments(*), refunds(*)';
+
+/**
+ * Supabase-backed orders. Sales and refunds run as atomic RPCs (server-side)
+ * so order + items + payments + ledger + stock + loyalty all commit together.
+ */
+export class SupabaseOrdersApi implements OrdersApi {
+  async createSale(input: SaleInput): Promise<OrderWithPayments> {
+    const { data, error } = await supabase.rpc('create_sale', {
+      p_store_id: getActiveStoreId(),
+      p_customer_id: input.customerId,
+      p_lines: input.lines.map((l) => ({
+        variantId: l.variantId,
+        productName: l.productName,
+        variantLabel: l.variantLabel,
+        qty: l.qty,
+        unitPrice: l.unitPrice,
+      })),
+      p_payments: input.payments.map((p) => ({
+        method: p.method,
+        amount: p.amount,
+        ref: p.ref,
+      })),
+      p_totals: {
+        subtotal: input.totals.subtotal,
+        discount: input.totals.discount,
+        tax: input.totals.tax,
+        total: input.totals.total,
+      },
+    });
+    if (error) throw error;
+    const order = await this.getOrder(data as Id);
+    if (!order) throw new Error('Order not found after sale');
+    return order;
+  }
+
+  async refundOrder(input: RefundInput): Promise<OrderWithPayments> {
+    const { error } = await supabase.rpc('refund_order', {
+      p_order_id: input.orderId,
+      p_items: input.items.map((i) => ({ orderItemId: i.orderItemId, qty: i.qty })),
+      p_restock: input.restock,
+      p_reason: input.reason,
+    });
+    if (error) throw error;
+    const order = await this.getOrder(input.orderId);
+    if (!order) throw new Error('Order not found after refund');
+    return order;
+  }
+
+  async setFulfillment(orderId: Id, status: FulfillmentStatus): Promise<void> {
+    const { error } = await supabase
+      .from('orders')
+      .update({ fulfillment_status: status })
+      .eq('id', orderId);
+    if (error) throw error;
+  }
+
+  async addTransaction(input: Omit<Transaction, 'id'>): Promise<Transaction> {
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert({
+        store_id: getActiveStoreId(),
+        type: input.type,
+        category: input.category,
+        amount: input.amount,
+        note: input.note,
+        date: input.date,
+        linked_order_id: input.linkedOrderId,
+        receipt_uri: input.receiptUri ?? null,
+      })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return toTransaction(data as TransactionRow);
+  }
+
+  async listOrders(): Promise<OrderWithPayments[]> {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(ORDER_SELECT)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data as OrderRow[]).map(toOrder);
+  }
+
+  async getOrder(id: Id): Promise<OrderWithPayments | null> {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(ORDER_SELECT)
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? toOrder(data as OrderRow) : null;
+  }
+
+  async listTransactions(): Promise<Transaction[]> {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('date', { ascending: false });
+    if (error) throw error;
+    return (data as TransactionRow[]).map(toTransaction);
+  }
+}
+
+export const ordersApi: OrdersApi = isSupabaseConfigured
+  ? new SupabaseOrdersApi()
+  : new LocalOrdersApi();

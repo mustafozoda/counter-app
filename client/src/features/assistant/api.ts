@@ -1,3 +1,5 @@
+import { getAccessToken } from '@/lib/supabase';
+
 import { CHAT_API_URL } from './config';
 
 /** A single piece of a multimodal message: text or an image (data URI / URL). */
@@ -70,6 +72,9 @@ export function streamChat(messages: WireMessage[], handlers: StreamHandlers): (
 
   xhr.open('POST', `${CHAT_API_URL}/chat`);
   xhr.setRequestHeader('Content-Type', 'application/json');
+  // Authenticate the request with the current Supabase session, when present.
+  const token = getAccessToken();
+  if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
   xhr.onprogress = drain;
   xhr.onload = () => {
     drain();
