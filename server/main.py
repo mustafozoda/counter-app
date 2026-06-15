@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import AsyncIterator
+from typing import Any
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -52,7 +53,9 @@ app.add_middleware(
 
 class Message(BaseModel):
     role: str = Field(pattern="^(system|user|assistant)$")
-    content: str
+    # Plain text, or OpenAI-style multimodal content parts (text + image_url)
+    # so the app can send images to a vision-capable model (e.g. gpt-4o-mini).
+    content: str | list[dict[str, Any]]
 
 
 class ChatRequest(BaseModel):

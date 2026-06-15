@@ -1,8 +1,14 @@
 import { CHAT_API_URL } from './config';
 
+/** A single piece of a multimodal message: text or an image (data URI / URL). */
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+
 export interface WireMessage {
   role: 'user' | 'assistant';
-  content: string;
+  /** Plain text, or multimodal parts when the turn includes images. */
+  content: string | ContentPart[];
 }
 
 export interface StreamHandlers {

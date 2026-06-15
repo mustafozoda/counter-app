@@ -121,3 +121,8 @@ export function formatDayLabel(date: Date): string {
 export function formatDateTime(date: Date): string {
   return formatDate(date, 'MMM d, yyyy · h:mm a');
 }
+
+/** Compact clock time for chat bubbles: "2:41 PM". */
+export function formatTime(date: Date): string {
+  return formatDate(date, 'h:mm a');
+}

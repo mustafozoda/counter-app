@@ -37,6 +37,8 @@ interface AssistantState {
   addMessage: (conversationId: string, message: ChatMessage) => void;
   appendToMessage: (conversationId: string, messageId: string, delta: string) => void;
   patchMessage: (conversationId: string, messageId: string, patch: Partial<ChatMessage>) => void;
+  /** Drop every message after the given one (used when editing & resending). */
+  truncateAfterMessage: (conversationId: string, messageId: string) => void;
 
   setHasHydrated: (value: boolean) => void;
 }
@@ -114,12 +116,34 @@ export const useAssistantStore = create<AssistantState>()(
           })),
         ),
 
+      truncateAfterMessage: (conversationId, messageId) =>
+        set((s) =>
+          mapConversation(s, conversationId, (c) => {
+            const idx = c.messages.findIndex((m) => m.id === messageId);
+            if (idx < 0) return c;
+            return {
+              ...c,
+              messages: c.messages.slice(0, idx + 1),
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        ),
+
       setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
       name: 'counter.assistant',
       storage: persistStorage,
-      partialize: (state) => ({ conversations: state.conversations, activeId: state.activeId }),
+      // Keep base64 image blobs out of AsyncStorage (tight size limits on
+      // Android): attachments stay visible for the live session but aren't
+      // persisted across restarts. Message text always persists.
+      partialize: (state) => ({
+        conversations: state.conversations.map((c) => ({
+          ...c,
+          messages: c.messages.map((m) => (m.images ? { ...m, images: undefined } : m)),
+        })),
+        activeId: state.activeId,
+      }),
       onRehydrateStorage: () => (state) => state?.setHasHydrated(true),
     },
   ),
