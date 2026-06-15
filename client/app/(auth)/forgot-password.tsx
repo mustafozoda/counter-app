@@ -8,6 +8,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Button, IconButton, Screen, Text, TextField } from '@/components/ui';
 import { forgotPasswordSchema, type ForgotPasswordValues } from '@/features/auth/schemas';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { toast } from '@/stores/toast';
 import { STAGGER_MS, useTheme } from '@/theme';
 
@@ -26,8 +27,15 @@ export default function ForgotPasswordScreen() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    // Mock reset; the Supabase adapter will send a real email later.
-    await new Promise((r) => setTimeout(r, 600));
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.auth.resetPasswordForEmail(values.email);
+      if (error) {
+        toast.error(t('auth.signInFailed'), error.message);
+        return;
+      }
+    } else {
+      await new Promise((r) => setTimeout(r, 600));
+    }
     toast.success(t('auth.resetSent'), t('auth.resetSentBody', { email: values.email }));
     router.back();
   });

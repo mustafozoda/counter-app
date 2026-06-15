@@ -82,7 +82,8 @@ export default function AssistantScreen() {
   // The latest assistant reply is the only one that can be regenerated.
   const lastAssistantId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'assistant') return messages[i].id;
+      const message = messages[i];
+      if (message?.role === 'assistant') return message.id;
     }
     return null;
   }, [messages]);
@@ -169,14 +170,15 @@ export default function AssistantScreen() {
 
     let lastIdx = -1;
     for (let i = conversation.messages.length - 1; i >= 0; i--) {
-      if (conversation.messages[i].role === 'assistant') {
+      if (conversation.messages[i]?.role === 'assistant') {
         lastIdx = i;
         break;
       }
     }
-    if (lastIdx < 0) return;
+    const assistantMessage = lastIdx >= 0 ? conversation.messages[lastIdx] : undefined;
+    if (!assistantMessage) return;
 
-    const assistantId = conversation.messages[lastIdx].id;
+    const assistantId = assistantMessage.id;
     const history: ChatTurn[] = conversation.messages
       .slice(0, lastIdx)
       .filter((m) => m.content.trim().length > 0)

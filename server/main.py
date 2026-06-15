@@ -17,8 +17,9 @@ import json
 import os
 from collections.abc import AsyncIterator
 
+import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import AsyncOpenAI
@@ -29,6 +30,36 @@ load_dotenv()
 DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 # Comma-separated list, or "*" for any origin (fine for local dev).
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",") if o.strip()]
+
+# Supabase auth: when both are set, /chat requires a valid Supabase access token
+# so only signed-in app users can reach the model. Leave unset for open dev.
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+REQUIRE_AUTH = bool(SUPABASE_URL and SUPABASE_ANON_KEY)
+
+
+async def require_user(authorization: str | None = Header(default=None)) -> dict | None:
+    """Validate the caller's Supabase access token via the Auth API.
+
+    No network round-trip in dev: when SUPABASE_URL/ANON_KEY are unset, auth is
+    disabled and every request is allowed.
+    """
+    if not REQUIRE_AUTH:
+        return None
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    token = authorization.split(" ", 1)[1].strip()
+    try:
+        async with httpx.AsyncClient(timeout=10) as http:
+            resp = await http.get(
+                f"{SUPABASE_URL}/auth/v1/user",
+                headers={"Authorization": f"Bearer {token}", "apikey": SUPABASE_ANON_KEY},
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=503, detail="Auth check failed") from exc
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return resp.json()
 
 SYSTEM_PROMPT = (
     "You are Counter Assistant, a friendly and concise AI helper living inside "
@@ -71,7 +102,7 @@ async def health() -> dict:
 
 
 @app.post("/chat")
-async def chat(req: ChatRequest) -> StreamingResponse:
+async def chat(req: ChatRequest, _user: dict | None = Depends(require_user)) -> StreamingResponse:
     """Stream a chat completion back to the app as SSE.
 
     Each frame is `data: {"delta": "..."}`; the stream ends with

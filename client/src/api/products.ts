@@ -2,7 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { defaultCategoriesFor, sampleCatalogFor } from '@/features/products/seed';
 import type { ProductWithVariants } from '@/features/products/stock';
+import { getActiveStoreId } from '@/lib/active-store';
 import { createLocalId } from '@/lib/id';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { uploadImages } from '@/lib/upload';
 import type {
   Category,
   Id,
@@ -345,4 +348,355 @@ export class LocalProductsApi implements ProductsApi {
   }
 }
 
-export const productsApi: ProductsApi = new LocalProductsApi();
+// ---------------------------------------------------------------------------
+// Supabase implementation
+// ---------------------------------------------------------------------------
+
+interface VariantRow {
+  id: string;
+  product_id: string;
+  attributes: Record<string, string> | null;
+  sku: string;
+  barcode: string | null;
+  stock_qty: number;
+  price_override: number | null;
+  low_stock_threshold: number;
+}
+
+interface ProductRow {
+  id: string;
+  name: string;
+  description: string;
+  brand: string | null;
+  category_id: string | null;
+  images: string[] | null;
+  cost: number;
+  base_price: number;
+  tax_rate: number | null;
+  status: ProductStatus;
+  created_at: string;
+  product_variants?: VariantRow[];
+}
+
+interface CategoryRow {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  sort_order: number;
+}
+
+interface MovementRow {
+  id: string;
+  variant_id: string;
+  type: StockMovementType;
+  qty: number;
+  reason: string | null;
+  created_at: string;
+}
+
+const toVariant = (row: VariantRow): ProductVariant => ({
+  id: row.id,
+  productId: row.product_id,
+  attributes: row.attributes ?? {},
+  sku: row.sku,
+  barcode: row.barcode,
+  stockQty: row.stock_qty,
+  priceOverride: row.price_override == null ? null : Number(row.price_override),
+  lowStockThreshold: row.low_stock_threshold,
+});
+
+const toProduct = (row: ProductRow): ProductWithVariants => ({
+  id: row.id,
+  name: row.name,
+  description: row.description ?? '',
+  brand: row.brand,
+  categoryId: row.category_id,
+  images: row.images ?? [],
+  cost: Number(row.cost),
+  basePrice: Number(row.base_price),
+  taxRate: row.tax_rate == null ? null : Number(row.tax_rate),
+  status: row.status,
+  createdAt: row.created_at,
+  variants: (row.product_variants ?? []).map(toVariant),
+});
+
+const toCategory = (row: CategoryRow): Category => ({
+  id: row.id,
+  name: row.name,
+  parentId: row.parent_id,
+  sortOrder: row.sort_order,
+});
+
+/**
+ * Supabase-backed catalog. Reads are scoped to the active store by RLS; inserts
+ * stamp store_id explicitly. Stock only ever changes through `adjust_stock` (an
+ * atomic RPC) so the movement ledger stays truthful.
+ */
+export class SupabaseProductsApi implements ProductsApi {
+  private seededStoreId: string | null = null;
+
+  async listProducts(): Promise<ProductWithVariants[]> {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, product_variants(*)')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data as ProductRow[]).map(toProduct);
+  }
+
+  async getProduct(id: Id): Promise<ProductWithVariants | null> {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, product_variants(*)')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? toProduct(data as ProductRow) : null;
+  }
+
+  async createProduct(input: ProductInput): Promise<ProductWithVariants> {
+    const storeId = getActiveStoreId();
+    const images = await uploadImages(input.images, storeId);
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        store_id: storeId,
+        name: input.name,
+        description: input.description,
+        brand: input.brand,
+        category_id: input.categoryId,
+        images,
+        cost: input.cost,
+        base_price: input.basePrice,
+        tax_rate: input.taxRate,
+        status: input.status,
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    const productId = (data as { id: string }).id;
+    for (const v of input.variants) await this.insertVariant(storeId, productId, v);
+    const created = await this.getProduct(productId);
+    if (!created) throw new Error('Product not found after create');
+    return created;
+  }
+
+  private async insertVariant(storeId: string, productId: Id, input: VariantInput): Promise<void> {
+    const stockQty = Math.max(0, input.stockQty);
+    const { data, error } = await supabase
+      .from('product_variants')
+      .insert({
+        store_id: storeId,
+        product_id: productId,
+        attributes: input.attributes,
+        sku: input.sku,
+        barcode: input.barcode,
+        stock_qty: stockQty,
+        price_override: input.priceOverride,
+        low_stock_threshold: input.lowStockThreshold,
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    if (stockQty > 0) {
+      // Opening stock is set directly above; log a matching restock movement.
+      await supabase.from('stock_movements').insert({
+        store_id: storeId,
+        variant_id: (data as { id: string }).id,
+        type: 'restock',
+        qty: stockQty,
+        reason: 'Opening stock',
+      });
+    }
+  }
+
+  async updateProduct(id: Id, input: ProductInput): Promise<ProductWithVariants> {
+    const storeId = getActiveStoreId();
+    const images = await uploadImages(input.images, storeId);
+    const { error } = await supabase
+      .from('products')
+      .update({
+        name: input.name,
+        description: input.description,
+        brand: input.brand,
+        category_id: input.categoryId,
+        images,
+        cost: input.cost,
+        base_price: input.basePrice,
+        tax_rate: input.taxRate,
+        status: input.status,
+      })
+      .eq('id', id);
+    if (error) throw error;
+
+    const keptIds = input.variants.filter((v) => v.id).map((v) => v.id as Id);
+    let del = supabase.from('product_variants').delete().eq('product_id', id);
+    if (keptIds.length > 0) del = del.not('id', 'in', `(${keptIds.join(',')})`);
+    await del;
+
+    for (const v of input.variants) {
+      if (v.id) {
+        // Stock changes only flow through adjustStock; never touch stock_qty here.
+        await supabase
+          .from('product_variants')
+          .update({
+            attributes: v.attributes,
+            sku: v.sku,
+            barcode: v.barcode,
+            price_override: v.priceOverride,
+            low_stock_threshold: v.lowStockThreshold,
+          })
+          .eq('id', v.id);
+      } else {
+        await this.insertVariant(storeId, id, v);
+      }
+    }
+    const updated = await this.getProduct(id);
+    if (!updated) throw new Error('Product not found after update');
+    return updated;
+  }
+
+  async setProductStatus(id: Id, status: ProductStatus): Promise<void> {
+    const { error } = await supabase.from('products').update({ status }).eq('id', id);
+    if (error) throw error;
+  }
+
+  async deleteProduct(id: Id): Promise<void> {
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async adjustStock(
+    variantId: Id,
+    qtyDelta: number,
+    type: StockMovementType,
+    reason: string | null,
+  ): Promise<void> {
+    const { error } = await supabase.rpc('adjust_stock', {
+      p_variant_id: variantId,
+      p_qty_delta: qtyDelta,
+      p_type: type,
+      p_reason: reason,
+    });
+    if (error) throw error;
+  }
+
+  async listMovements(productId: Id): Promise<StockMovement[]> {
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('id')
+      .eq('product_id', productId);
+    const ids = (variants as { id: string }[] | null)?.map((v) => v.id) ?? [];
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase
+      .from('stock_movements')
+      .select('*')
+      .in('variant_id', ids)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data as MovementRow[]).map((m) => ({
+      id: m.id,
+      variantId: m.variant_id,
+      type: m.type,
+      qty: m.qty,
+      reason: m.reason,
+      createdAt: m.created_at,
+    }));
+  }
+
+  async findByBarcode(code: string): Promise<BarcodeHit | null> {
+    const trimmed = code.trim();
+    if (!trimmed) return null;
+    const { data: variant } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('barcode', trimmed)
+      .maybeSingle();
+    if (!variant) return null;
+    const product = await this.getProduct((variant as VariantRow).product_id);
+    if (!product) return null;
+    return { product, variant: toVariant(variant as VariantRow) };
+  }
+
+  async listCategories(): Promise<Category[]> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return (data as CategoryRow[]).map(toCategory);
+  }
+
+  async saveCategory(input: CategoryInput): Promise<Category> {
+    if (input.id) {
+      const { data, error } = await supabase
+        .from('categories')
+        .update({ name: input.name, parent_id: input.parentId })
+        .eq('id', input.id)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return toCategory(data as CategoryRow);
+    }
+    const { count } = await supabase.from('categories').select('id', { count: 'exact', head: true });
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({
+        store_id: getActiveStoreId(),
+        name: input.name,
+        parent_id: input.parentId,
+        sort_order: count ?? 0,
+      })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return toCategory(data as CategoryRow);
+  }
+
+  async deleteCategory(id: Id): Promise<void> {
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async ensureSeeded(vertical: string): Promise<void> {
+    const storeId = getActiveStoreId();
+    if (this.seededStoreId === storeId) return;
+    const { count } = await supabase.from('categories').select('id', { count: 'exact', head: true });
+    if ((count ?? 0) === 0) {
+      const rows = defaultCategoriesFor(vertical).map((name, index) => ({
+        store_id: storeId,
+        name,
+        parent_id: null,
+        sort_order: index,
+      }));
+      const { error } = await supabase.from('categories').insert(rows);
+      if (error) throw error;
+    }
+    this.seededStoreId = storeId;
+  }
+
+  async addSampleCatalog(vertical: string): Promise<number> {
+    await this.ensureSeeded(vertical);
+    const categories = await this.listCategories();
+    const samples = sampleCatalogFor(vertical, categories);
+    for (const sample of samples) {
+      await this.createProduct({
+        name: sample.product.name,
+        description: sample.product.description,
+        brand: sample.product.brand,
+        categoryId: sample.product.categoryId,
+        images: sample.product.images,
+        cost: sample.product.cost,
+        basePrice: sample.product.basePrice,
+        taxRate: sample.product.taxRate,
+        status: sample.product.status,
+        variants: sample.variants,
+      });
+    }
+    return samples.length;
+  }
+}
+
+export const productsApi: ProductsApi = isSupabaseConfigured
+  ? new SupabaseProductsApi()
+  : new LocalProductsApi();

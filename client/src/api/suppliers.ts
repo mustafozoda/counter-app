@@ -1,8 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { productsApi } from '@/api/products';
+import { getActiveStoreId } from '@/lib/active-store';
 import { createLocalId } from '@/lib/id';
-import type { Id, PurchaseOrder, PurchaseOrderItem, Supplier } from '@/types/models';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import type {
+  Id,
+  PurchaseOrder,
+  PurchaseOrderItem,
+  PurchaseOrderStatus,
+  Supplier,
+} from '@/types/models';
 
 import { ordersApi } from './orders';
 
@@ -154,4 +162,128 @@ export class LocalSuppliersApi implements SuppliersApi {
   }
 }
 
-export const suppliersApi: SuppliersApi = new LocalSuppliersApi();
+// ---------------------------------------------------------------------------
+// Supabase implementation
+// ---------------------------------------------------------------------------
+
+interface SupplierRow {
+  id: string;
+  name: string;
+  contact: string | null;
+  notes: string;
+}
+
+interface PurchaseOrderRow {
+  id: string;
+  supplier_id: string;
+  items: PurchaseOrderItem[] | null;
+  status: PurchaseOrderStatus;
+  total_cost: number;
+  created_at: string;
+}
+
+const toSupplier = (row: SupplierRow): Supplier => ({
+  id: row.id,
+  name: row.name,
+  contact: row.contact,
+  notes: row.notes ?? '',
+});
+
+const toPurchaseOrder = (row: PurchaseOrderRow): PurchaseOrder => ({
+  id: row.id,
+  supplierId: row.supplier_id,
+  items: row.items ?? [],
+  status: row.status,
+  totalCost: Number(row.total_cost),
+  createdAt: row.created_at,
+});
+
+export class SupabaseSuppliersApi implements SuppliersApi {
+  async listSuppliers(): Promise<Supplier[]> {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .order('name', { ascending: true });
+    if (error) throw error;
+    return (data as SupplierRow[]).map(toSupplier);
+  }
+
+  async getSupplier(id: Id): Promise<Supplier | null> {
+    const { data, error } = await supabase.from('suppliers').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data ? toSupplier(data as SupplierRow) : null;
+  }
+
+  async saveSupplier(input: SupplierInput): Promise<Supplier> {
+    if (input.id) {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .update({ name: input.name, contact: input.contact, notes: input.notes })
+        .eq('id', input.id)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return toSupplier(data as SupplierRow);
+    }
+    const { data, error } = await supabase
+      .from('suppliers')
+      .insert({
+        store_id: getActiveStoreId(),
+        name: input.name,
+        contact: input.contact,
+        notes: input.notes,
+      })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return toSupplier(data as SupplierRow);
+  }
+
+  async deleteSupplier(id: Id): Promise<void> {
+    const { error } = await supabase.from('suppliers').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async listPurchaseOrders(): Promise<PurchaseOrder[]> {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data as PurchaseOrderRow[]).map(toPurchaseOrder);
+  }
+
+  async createPurchaseOrder(input: PurchaseOrderInput): Promise<PurchaseOrder> {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .insert({
+        store_id: getActiveStoreId(),
+        supplier_id: input.supplierId,
+        items: input.items,
+        status: 'ordered',
+        total_cost: purchaseOrderTotal(input.items),
+      })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return toPurchaseOrder(data as PurchaseOrderRow);
+  }
+
+  async receivePurchaseOrder(id: Id): Promise<void> {
+    const { error } = await supabase.rpc('receive_purchase_order', { p_id: id });
+    if (error) throw error;
+  }
+
+  async cancelPurchaseOrder(id: Id): Promise<void> {
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update({ status: 'cancelled' })
+      .eq('id', id)
+      .neq('status', 'received');
+    if (error) throw error;
+  }
+}
+
+export const suppliersApi: SuppliersApi = isSupabaseConfigured
+  ? new SupabaseSuppliersApi()
+  : new LocalSuppliersApi();

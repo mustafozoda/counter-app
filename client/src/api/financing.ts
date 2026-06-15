@@ -5,8 +5,10 @@ import {
   type Frequency,
   type InstallmentDraft,
 } from '@/features/financing/schedule';
+import { getActiveStoreId } from '@/lib/active-store';
 import { createLocalId } from '@/lib/id';
-import type { FinancingPlan, Id, Installment } from '@/types/models';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import type { FinancingPlan, FinancingPlanStatus, Id, Installment, InstallmentStatus } from '@/types/models';
 
 import { ordersApi } from './orders';
 
@@ -135,4 +137,137 @@ export class LocalFinancingApi implements FinancingApi {
   }
 }
 
-export const financingApi: FinancingApi = new LocalFinancingApi();
+// ---------------------------------------------------------------------------
+// Supabase implementation
+// ---------------------------------------------------------------------------
+
+interface InstallmentRow {
+  id: string;
+  plan_id: string;
+  number: number;
+  due_date: string;
+  amount: number;
+  paid_at: string | null;
+  status: InstallmentStatus;
+}
+
+interface PlanRow {
+  id: string;
+  order_id: string;
+  customer_id: string;
+  principal: number;
+  down_payment: number;
+  frequency: Frequency;
+  status: FinancingPlanStatus;
+  created_at: string;
+  installments?: InstallmentRow[];
+}
+
+const toInstallment = (row: InstallmentRow): Installment => ({
+  id: row.id,
+  planId: row.plan_id,
+  number: row.number,
+  dueDate: row.due_date,
+  amount: Number(row.amount),
+  paidAt: row.paid_at,
+  status: row.status,
+});
+
+const toPlan = (row: PlanRow): FinancingPlan => ({
+  id: row.id,
+  orderId: row.order_id,
+  customerId: row.customer_id,
+  principal: Number(row.principal),
+  downPayment: Number(row.down_payment),
+  installments: (row.installments ?? []).map(toInstallment).sort((a, b) => a.number - b.number),
+  frequency: row.frequency,
+  status: row.status,
+  createdAt: row.created_at,
+});
+
+const PLAN_SELECT = '*, installments(*)';
+
+export class SupabaseFinancingApi implements FinancingApi {
+  async createPlan(input: CreatePlanInput): Promise<FinancingPlan> {
+    const storeId = getActiveStoreId();
+    const { data, error } = await supabase
+      .from('financing_plans')
+      .insert({
+        store_id: storeId,
+        order_id: input.orderId,
+        customer_id: input.customerId,
+        principal: input.principal,
+        down_payment: input.downPayment,
+        frequency: input.frequency,
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    const planId = (data as { id: string }).id;
+
+    const drafts: InstallmentDraft[] = generateSchedule(
+      input.principal,
+      input.downPayment,
+      input.count,
+      input.frequency,
+    );
+    const rows = drafts.map((d) => ({
+      store_id: storeId,
+      plan_id: planId,
+      number: d.number,
+      due_date: d.dueDate,
+      amount: d.amount,
+      paid_at: null,
+      status: 'upcoming' as InstallmentStatus,
+    }));
+    const { error: insErr } = await supabase.from('installments').insert(rows);
+    if (insErr) throw insErr;
+
+    const plan = await this.getPlan(planId);
+    if (!plan) throw new Error('Plan not found after create');
+    return plan;
+  }
+
+  async listPlans(): Promise<FinancingPlan[]> {
+    const { data, error } = await supabase
+      .from('financing_plans')
+      .select(PLAN_SELECT)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data as PlanRow[]).map(toPlan);
+  }
+
+  async getPlan(id: Id): Promise<FinancingPlan | null> {
+    const { data, error } = await supabase
+      .from('financing_plans')
+      .select(PLAN_SELECT)
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? toPlan(data as PlanRow) : null;
+  }
+
+  async markInstallmentPaid(planId: Id, installmentId: Id): Promise<FinancingPlan> {
+    const { error } = await supabase.rpc('mark_installment_paid', {
+      p_plan_id: planId,
+      p_installment_id: installmentId,
+    });
+    if (error) throw error;
+    const plan = await this.getPlan(planId);
+    if (!plan) throw new Error('Plan not found after payment');
+    return plan;
+  }
+
+  async cancelPlan(id: Id): Promise<void> {
+    const { error } = await supabase
+      .from('financing_plans')
+      .update({ status: 'cancelled' })
+      .eq('id', id);
+    if (error) throw error;
+  }
+}
+
+export const financingApi: FinancingApi = isSupabaseConfigured
+  ? new SupabaseFinancingApi()
+  : new LocalFinancingApi();

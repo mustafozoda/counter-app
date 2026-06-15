@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { getActiveStoreId } from '@/lib/active-store';
 import { createLocalId } from '@/lib/id';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Customer, Id } from '@/types/models';
 
 export interface CustomerInput {
@@ -100,4 +102,100 @@ export class LocalCustomersApi implements CustomersApi {
   }
 }
 
-export const customersApi: CustomersApi = new LocalCustomersApi();
+// ---------------------------------------------------------------------------
+// Supabase implementation
+// ---------------------------------------------------------------------------
+
+interface CustomerRow {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  addresses: string[] | null;
+  notes: string;
+  loyalty_points: number;
+  tags: string[] | null;
+  created_at: string;
+}
+
+const toCustomer = (row: CustomerRow): Customer => ({
+  id: row.id,
+  name: row.name,
+  phone: row.phone,
+  email: row.email,
+  addresses: row.addresses ?? [],
+  notes: row.notes ?? '',
+  loyaltyPoints: row.loyalty_points,
+  tags: row.tags ?? [],
+  createdAt: row.created_at,
+});
+
+export class SupabaseCustomersApi implements CustomersApi {
+  async listCustomers(): Promise<Customer[]> {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .order('name', { ascending: true });
+    if (error) throw error;
+    return (data as CustomerRow[]).map(toCustomer);
+  }
+
+  async getCustomer(id: Id): Promise<Customer | null> {
+    const { data, error } = await supabase.from('customers').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data ? toCustomer(data as CustomerRow) : null;
+  }
+
+  async saveCustomer(input: CustomerInput & { id?: Id }): Promise<Customer> {
+    if (input.id) {
+      const { data, error } = await supabase
+        .from('customers')
+        .update({
+          name: input.name,
+          phone: input.phone,
+          email: input.email,
+          notes: input.notes,
+          tags: input.tags,
+        })
+        .eq('id', input.id)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return toCustomer(data as CustomerRow);
+    }
+    const { data, error } = await supabase
+      .from('customers')
+      .insert({
+        store_id: getActiveStoreId(),
+        name: input.name,
+        phone: input.phone,
+        email: input.email,
+        notes: input.notes,
+        tags: input.tags,
+      })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return toCustomer(data as CustomerRow);
+  }
+
+  async deleteCustomer(id: Id): Promise<void> {
+    const { error } = await supabase.from('customers').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async addLoyaltyPoints(id: Id, points: number): Promise<void> {
+    const { data } = await supabase
+      .from('customers')
+      .select('loyalty_points')
+      .eq('id', id)
+      .maybeSingle();
+    if (!data) return;
+    const next = Math.max(0, (data as { loyalty_points: number }).loyalty_points + points);
+    await supabase.from('customers').update({ loyalty_points: next }).eq('id', id);
+  }
+}
+
+export const customersApi: CustomersApi = isSupabaseConfigured
+  ? new SupabaseCustomersApi()
+  : new LocalCustomersApi();
