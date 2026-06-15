@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Check, Copy, Pencil, RefreshCw, Sparkles, X, type LucideIcon } from 'lucide-react-native';
 import { memo, useState } from 'react';
@@ -141,28 +142,50 @@ function MessageBubbleBase({
       );
     }
 
+    const hasImages = !!message.images && message.images.length > 0;
+    const hasText = message.content.length > 0;
     return (
       <Animated.View
         entering={FadeInDown.springify().damping(20).mass(0.5)}
         className="items-end pl-12"
       >
-        <Pressable onLongPress={copy} delayLongPress={250}>
-          <View className="rounded-3xl rounded-br-lg bg-primary px-4 py-2.5">
-            <Text variant="body" tone="inverse" selectable>
-              {message.content}
-            </Text>
+        {hasImages ? (
+          <View className="mb-1 flex-row flex-wrap justify-end gap-1.5">
+            {message.images!.map((uri, i) => (
+              <Image
+                key={i}
+                source={{ uri }}
+                style={{ width: 132, height: 132, borderRadius: 16 }}
+                contentFit="cover"
+                transition={150}
+                accessibilityLabel={t('photos.photoN', { n: i + 1 })}
+              />
+            ))}
           </View>
-        </Pressable>
+        ) : null}
+
+        {hasText ? (
+          <Pressable onLongPress={copy} delayLongPress={250}>
+            <View className="rounded-3xl rounded-br-lg bg-primary px-4 py-2.5">
+              <Text variant="body" tone="inverse" selectable>
+                {message.content}
+              </Text>
+            </View>
+          </Pressable>
+        ) : null}
+
         <View className="mt-1 flex-row items-center pr-1">
           <Text variant="micro" tone="tertiary" className="mr-1">
             {time}
           </Text>
-          <ActionChip
-            icon={copied ? Check : Copy}
-            label={copied ? t('assistant.copied') : t('assistant.copy')}
-            active={copied}
-            onPress={copy}
-          />
+          {hasText ? (
+            <ActionChip
+              icon={copied ? Check : Copy}
+              label={copied ? t('assistant.copied') : t('assistant.copy')}
+              active={copied}
+              onPress={copy}
+            />
+          ) : null}
           {canEdit && onEdit ? (
             <ActionChip icon={Pencil} label={t('assistant.edit')} onPress={startEdit} />
           ) : null}

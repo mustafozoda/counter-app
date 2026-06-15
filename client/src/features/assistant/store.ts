@@ -134,7 +134,16 @@ export const useAssistantStore = create<AssistantState>()(
     {
       name: 'counter.assistant',
       storage: persistStorage,
-      partialize: (state) => ({ conversations: state.conversations, activeId: state.activeId }),
+      // Keep base64 image blobs out of AsyncStorage (tight size limits on
+      // Android): attachments stay visible for the live session but aren't
+      // persisted across restarts. Message text always persists.
+      partialize: (state) => ({
+        conversations: state.conversations.map((c) => ({
+          ...c,
+          messages: c.messages.map((m) => (m.images ? { ...m, images: undefined } : m)),
+        })),
+        activeId: state.activeId,
+      }),
       onRehydrateStorage: () => (state) => state?.setHasHydrated(true),
     },
   ),
