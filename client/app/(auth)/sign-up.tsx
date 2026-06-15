@@ -31,8 +31,9 @@ export default function SignUpScreen() {
     try {
       await signUp(values.name, values.email, values.password);
       haptics.success();
-    } catch {
-      toast.error(t('auth.createFailed'), t('auth.tryAgain'));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      toast.error(t('auth.createFailed'), message || t('auth.tryAgain'));
     }
   });
 
