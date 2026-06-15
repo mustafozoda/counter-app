@@ -64,7 +64,7 @@ function CodeBlock({ code }: { code: string }) {
   return (
     <View className="rounded-md border border-hairline bg-surface-sunken px-3 py-2.5 dark:bg-surface">
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <Text mono variant="caption" tone="secondary">
+        <Text mono variant="caption" tone="secondary" selectable>
           {code}
         </Text>
       </ScrollView>
@@ -109,7 +109,7 @@ function TextBlock({ value }: { value: string }) {
         }
 
         return (
-          <Text key={index} variant="body">
+          <Text key={index} variant="body" selectable>
             {renderInline(line)}
           </Text>
         );
