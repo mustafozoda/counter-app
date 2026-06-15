@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { cn } from '@/lib/cn';
@@ -53,8 +54,11 @@ export function Screen({
 
   return (
     <SafeAreaView edges={edges} className={cn('flex-1 bg-background', className)}>
-      {keyboardAvoid && Platform.OS === 'ios' ? (
-        <KeyboardAvoidingView behavior="padding" className="flex-1">
+      {keyboardAvoid ? (
+        // keyboard-controller's KeyboardAvoidingView works on Android too, which
+        // matters under edge-to-edge where the OS no longer resizes the window
+        // for the soft keyboard (RN's built-in version is effectively iOS-only).
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           {content}
         </KeyboardAvoidingView>
       ) : (
