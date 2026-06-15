@@ -1,18 +1,32 @@
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, History, SquarePen } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowDown, ArrowLeft, History, SquarePen } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Platform,
+  ScrollView,
+  View,
+} from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, PressableScale, Text, useSheetRef } from '@/components/ui';
 import { createLocalId } from '@/lib/id';
+import { toast } from '@/stores/toast';
+import { useTheme } from '@/theme';
 
 import { Composer } from '@/features/assistant/components/composer';
 import { ConversationSheet } from '@/features/assistant/components/conversation-sheet';
 import { MessageBubble } from '@/features/assistant/components/message-bubble';
 import { streamChat } from '@/features/assistant/api';
 import { useAssistantStore } from '@/features/assistant/store';
+
+type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
 function AssistantHero({ onPick }: { onPick: (prompt: string) => void }) {
   const { t } = useTranslation();
@@ -52,16 +66,26 @@ function AssistantHero({ onPick }: { onPick: (prompt: string) => void }) {
 export default function AssistantScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const cancelRef = useRef<(() => void) | null>(null);
   const historySheet = useSheetRef();
   const [busy, setBusy] = useState(false);
+  const [showScrollDown, setShowScrollDown] = useState(false);
 
   const conversations = useAssistantStore((s) => s.conversations);
   const activeId = useAssistantStore((s) => s.activeId);
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const messages = active?.messages ?? [];
+
+  // The latest assistant reply is the only one that can be regenerated.
+  const lastAssistantId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') return messages[i].id;
+    }
+    return null;
+  }, [messages]);
 
   // Keep the latest messages in view when the keyboard opens: the window
   // resizes, so without this the bottom of the chat hides behind the keyboard.
@@ -73,55 +97,113 @@ export default function AssistantScreen() {
     return () => sub.remove();
   }, []);
 
-  const send = (text: string) => {
+  // Shared streaming pipeline for both first sends and regenerations.
+  const streamInto = useCallback(
+    (conversationId: string, assistantId: string, history: ChatTurn[]) => {
+      setBusy(true);
+      cancelRef.current = streamChat(history, {
+        onDelta: (delta) =>
+          useAssistantStore.getState().appendToMessage(conversationId, assistantId, delta),
+        onDone: () => {
+          setBusy(false);
+          cancelRef.current = null;
+        },
+        onError: () => {
+          const current = useAssistantStore
+            .getState()
+            .conversations.find((c) => c.id === conversationId)
+            ?.messages.find((m) => m.id === assistantId);
+          useAssistantStore.getState().patchMessage(conversationId, assistantId, {
+            content:
+              current && current.content.length > 0 ? current.content : t('assistant.errorBody'),
+            error: !current || current.content.length === 0,
+          });
+          setBusy(false);
+          cancelRef.current = null;
+        },
+      });
+    },
+    [t],
+  );
+
+  const send = useCallback(
+    (text: string) => {
+      const store = useAssistantStore.getState();
+      const conversationId = store.ensureConversation();
+
+      store.addMessage(conversationId, {
+        id: createLocalId(),
+        role: 'user',
+        content: text,
+        createdAt: new Date().toISOString(),
+      });
+
+      const assistantId = createLocalId();
+      store.addMessage(conversationId, {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        createdAt: new Date().toISOString(),
+      });
+
+      const conversation = useAssistantStore
+        .getState()
+        .conversations.find((c) => c.id === conversationId);
+      const history: ChatTurn[] = (conversation?.messages ?? [])
+        .filter((m) => m.content.trim().length > 0)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      streamInto(conversationId, assistantId, history);
+    },
+    [streamInto],
+  );
+
+  // Re-run the conversation up to the last user turn, replacing the last reply.
+  const regenerate = useCallback(() => {
+    if (busy) return;
     const store = useAssistantStore.getState();
-    const conversationId = store.ensureConversation();
+    const conversationId = store.activeId;
+    if (!conversationId) return;
+    const conversation = store.conversations.find((c) => c.id === conversationId);
+    if (!conversation) return;
 
-    store.addMessage(conversationId, {
-      id: createLocalId(),
-      role: 'user',
-      content: text,
-      createdAt: new Date().toISOString(),
-    });
+    let lastIdx = -1;
+    for (let i = conversation.messages.length - 1; i >= 0; i--) {
+      if (conversation.messages[i].role === 'assistant') {
+        lastIdx = i;
+        break;
+      }
+    }
+    if (lastIdx < 0) return;
 
-    const assistantId = createLocalId();
-    store.addMessage(conversationId, {
-      id: assistantId,
-      role: 'assistant',
-      content: '',
-      createdAt: new Date().toISOString(),
-    });
-
-    const conversation = useAssistantStore
-      .getState()
-      .conversations.find((c) => c.id === conversationId);
-    const history = (conversation?.messages ?? [])
+    const assistantId = conversation.messages[lastIdx].id;
+    const history: ChatTurn[] = conversation.messages
+      .slice(0, lastIdx)
       .filter((m) => m.content.trim().length > 0)
       .map((m) => ({ role: m.role, content: m.content }));
+    if (history.length === 0) return;
 
-    setBusy(true);
-    cancelRef.current = streamChat(history, {
-      onDelta: (delta) =>
-        useAssistantStore.getState().appendToMessage(conversationId, assistantId, delta),
-      onDone: () => {
-        setBusy(false);
-        cancelRef.current = null;
-      },
-      onError: () => {
-        const current = useAssistantStore
-          .getState()
-          .conversations.find((c) => c.id === conversationId)
-          ?.messages.find((m) => m.id === assistantId);
-        useAssistantStore.getState().patchMessage(conversationId, assistantId, {
-          content:
-            current && current.content.length > 0 ? current.content : t('assistant.errorBody'),
-          error: !current || current.content.length === 0,
-        });
-        setBusy(false);
-        cancelRef.current = null;
-      },
-    });
-  };
+    store.patchMessage(conversationId, assistantId, { content: '', error: false });
+    streamInto(conversationId, assistantId, history);
+  }, [busy, streamInto]);
+
+  const copyMessage = useCallback(
+    (text: string) => {
+      void Clipboard.setStringAsync(text);
+      toast.success(t('assistant.copied'));
+    },
+    [t],
+  );
+
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+    setShowScrollDown(distanceFromBottom > 160);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
   const stop = () => {
     cancelRef.current?.();
@@ -176,18 +258,47 @@ export default function AssistantScreen() {
             contentContainerStyle={{ padding: 16, gap: 14 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
           >
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubble
+                key={message.id}
+                message={message}
+                onCopy={copyMessage}
+                onRegenerate={regenerate}
+                canRegenerate={message.id === lastAssistantId && !busy}
+              />
             ))}
           </ScrollView>
         )}
 
+        {showScrollDown && messages.length > 0 ? (
+          <Animated.View entering={FadeIn.duration(150)} className="absolute bottom-20 right-4">
+            <PressableScale
+              onPress={scrollToBottom}
+              scaleTo={0.9}
+              haptic="tap"
+              accessibilityRole="button"
+              accessibilityLabel={t('assistant.scrollDown')}
+              className="h-10 w-10 items-center justify-center rounded-full border border-hairline bg-surface dark:bg-surface-elevated"
+              style={{
+                shadowColor: '#000',
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 4,
+              }}
+            >
+              <ArrowDown size={18} color={colors.ink} strokeWidth={2.5} />
+            </PressableScale>
+          </Animated.View>
+        ) : null}
+
         <View
           className="bg-background"
           style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 4 }}
-          // style={{ paddingBottom: 0 }}
         >
           <Composer busy={busy} onSend={send} onStop={stop} />
         </View>
