@@ -5,6 +5,7 @@ import { getActiveStoreId } from '@/lib/active-store';
 import { createLocalId } from '@/lib/id';
 import { persistStorage } from '@/lib/storage';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/auth';
 import { useStoreProfile } from '@/stores/store-profile';
 import type { StaffMember } from '@/types/models';
 
@@ -106,11 +107,13 @@ const creator = (
           .update({ name: input.name, email: input.email, role: input.role })
           .eq('id', input.id);
       } else {
-        await supabase.from('store_members').insert({
-          store_id: getActiveStoreId(),
-          name: input.name,
-          email: input.email,
-          role: input.role,
+        // RPC links an already-registered user by email (or the signup trigger
+        // links them later); owner-only is enforced server-side.
+        await supabase.rpc('add_store_member', {
+          p_store_id: getActiveStoreId(),
+          p_name: input.name,
+          p_email: input.email,
+          p_role: input.role,
         });
       }
       await get().refresh();
@@ -147,6 +150,12 @@ export const useStaffStore = isSupabaseConfigured
         onRehydrateStorage: () => (state) => state?.setHasHydrated(true),
       }),
     );
+
+/** Reactive permission check for the signed-in user's role. */
+export function usePermission(permission: Permission): boolean {
+  const role = useAuthStore((s) => s.user?.role ?? 'cashier');
+  return roleHasPermission(role, permission);
+}
 
 // Reload the staff list whenever the active store changes (e.g. after sign-in).
 if (isSupabaseConfigured) {

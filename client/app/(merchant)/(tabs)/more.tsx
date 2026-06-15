@@ -4,6 +4,7 @@ import {
   HandCoins,
   LogOut,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Tag,
@@ -20,6 +21,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card, Logo, PressableScale, Screen, SegmentedControl, Text } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth';
 import { usePreferences, type ThemeMode } from '@/stores/preferences';
+import { roleHasPermission, type Permission } from '@/stores/staff';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import { STAGGER_MS, useTheme } from '@/theme';
@@ -32,6 +34,8 @@ interface MenuEntry {
   phase: string;
   /** Route when the module is live; absent = coming-soon toast. */
   href?: string;
+  /** Hide the entry unless the signed-in role has this permission. */
+  permission?: Permission;
 }
 
 const MENU: MenuEntry[] = [
@@ -55,6 +59,7 @@ const MENU: MenuEntry[] = [
     descKey: 'more.financeDesc',
     phase: 'Phase 4',
     href: '/finance',
+    permission: 'view_finance',
   },
   {
     icon: HandCoins,
@@ -62,6 +67,7 @@ const MENU: MenuEntry[] = [
     descKey: 'more.financingDesc',
     phase: 'Phase 5',
     href: '/financing',
+    permission: 'view_finance',
   },
   {
     icon: Truck,
@@ -69,6 +75,7 @@ const MENU: MenuEntry[] = [
     descKey: 'more.suppliersDesc',
     phase: 'Phase 6',
     href: '/suppliers',
+    permission: 'manage_inventory',
   },
   {
     icon: Tag,
@@ -76,6 +83,7 @@ const MENU: MenuEntry[] = [
     descKey: 'more.promotionsDesc',
     phase: 'Phase 6',
     href: '/promotions',
+    permission: 'manage_inventory',
   },
   {
     icon: BarChart3,
@@ -83,6 +91,15 @@ const MENU: MenuEntry[] = [
     descKey: 'more.reportsDesc',
     phase: 'Phase 6',
     href: '/reports',
+    permission: 'view_finance',
+  },
+  {
+    icon: ShieldCheck,
+    labelKey: 'staff.title',
+    descKey: 'staff.buildMsg',
+    phase: 'Phase 7',
+    href: '/staff',
+    permission: 'manage_staff',
   },
   {
     icon: Settings,
@@ -90,6 +107,7 @@ const MENU: MenuEntry[] = [
     descKey: 'more.settingsDesc',
     phase: 'Phase 8',
     href: '/settings',
+    permission: 'manage_settings',
   },
 ];
 
@@ -106,7 +124,9 @@ export default function MoreScreen() {
   const setThemeMode = usePreferences((s) => s.setThemeMode);
 
   const themeOptions = THEME_VALUES.map((value) => ({ value, label: t(`more.${value}`) }));
-  const roleLabel = t(`roles.${user?.role ?? 'cashier'}`);
+  const role = user?.role ?? 'cashier';
+  const roleLabel = t(`roles.${role}`);
+  const menu = MENU.filter((entry) => !entry.permission || roleHasPermission(role, entry.permission));
 
   const confirmSignOut = () => {
     Alert.alert(t('more.signOut'), t('more.signOutConfirm'), [
@@ -162,7 +182,7 @@ export default function MoreScreen() {
           {t('more.manage')}
         </Text>
         <Card padded={false} className="overflow-hidden">
-          {MENU.map((entry, index) => (
+          {menu.map((entry, index) => (
             <PressableScale
               key={entry.labelKey}
               scaleTo={0.99}
@@ -176,7 +196,7 @@ export default function MoreScreen() {
               }}
               accessibilityRole="button"
               className={
-                index < MENU.length - 1
+                index < menu.length - 1
                   ? 'flex-row items-center gap-3 border-b border-hairline px-4 py-3.5'
                   : 'flex-row items-center gap-3 px-4 py-3.5'
               }

@@ -106,6 +106,10 @@ export const resources = {
         comingSoonBody: 'Arrives with {{phase}}.',
       },
       roles: { owner: 'Owner', manager: 'Manager', cashier: 'Cashier' },
+      access: {
+        deniedTitle: 'No access',
+        deniedBody: "You don't have permission to view this. Ask the store owner for access.",
+      },
       products: {
         title: 'Products',
         inCatalog: '{{count}} in catalog',
@@ -996,6 +1000,10 @@ export const resources = {
         comingSoonBody: 'Будет добавлено в {{phase}}.',
       },
       roles: { owner: 'Владелец', manager: 'Менеджер', cashier: 'Кассир' },
+      access: {
+        deniedTitle: 'Нет доступа',
+        deniedBody: 'У вас нет прав для просмотра. Обратитесь к владельцу магазина.',
+      },
       products: {
         title: 'Товары',
         inCatalog: '{{count}} в каталоге',
@@ -1889,6 +1897,10 @@ export const resources = {
         comingSoonBody: 'Дар {{phase}} илова мешавад.',
       },
       roles: { owner: 'Соҳиб', manager: 'Менеҷер', cashier: 'Кассир' },
+      access: {
+        deniedTitle: 'Дастрасӣ нест',
+        deniedBody: 'Шумо иҷозати дидани ин надоред. Ба соҳиби мағоза муроҷиат кунед.',
+      },
       products: {
         title: 'Маҳсулот',
         inCatalog: '{{count}} дар каталог',

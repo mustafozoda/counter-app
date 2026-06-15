@@ -20,6 +20,7 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import { purchaseOrderTotal } from '@/api/suppliers';
 import { ProductImage } from '@/features/products/components/product-image';
 import { useProducts } from '@/features/products/hooks';
@@ -43,7 +44,9 @@ interface DraftLine {
   unitCost: number;
 }
 
-export default function SupplierDetailScreen() {
+export default withPermission(SupplierDetailScreen, 'manage_inventory');
+
+function SupplierDetailScreen() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

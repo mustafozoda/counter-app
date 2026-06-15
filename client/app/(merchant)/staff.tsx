@@ -20,6 +20,8 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
+import { useAuthStore } from '@/stores/auth';
 import {
   ROLE_PERMISSIONS,
   useStaffStore,
@@ -27,7 +29,7 @@ import {
 } from '@/stores/staff';
 import { toast } from '@/stores/toast';
 import { useTheme } from '@/theme';
-import type { StaffRole } from '@/types/models';
+import type { StaffMember, StaffRole } from '@/types/models';
 
 const ROLES: { value: StaffRole; labelKey: string; tone: 'accent' | 'info' | 'neutral' }[] = [
   { value: 'owner', labelKey: 'roles.owner', tone: 'accent' },
@@ -43,19 +45,27 @@ const PERMISSION_LABEL_KEY: Record<Permission, string> = {
   manage_settings: 'staff.permSettings',
 };
 
-export default function StaffScreen() {
+export default withPermission(StaffScreen, 'manage_staff');
+
+function StaffScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { colors } = useTheme();
   const members = useStaffStore((s) => s.members);
   const saveMember = useStaffStore((s) => s.saveMember);
   const removeMember = useStaffStore((s) => s.removeMember);
+  const currentEmail = useAuthStore((s) => s.user?.email ?? '');
 
   const sheet = useSheetRef();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<StaffRole>('cashier');
+
+  // You can't remove or demote yourself — prevents locking the owner out.
+  const isSelf = (m: StaffMember) =>
+    currentEmail.length > 0 && m.email.toLowerCase() === currentEmail.toLowerCase();
+  const editingSelf = editingId != null && members.some((m) => m.id === editingId && isSelf(m));
 
   const openNew = () => {
     setEditingId(null);
@@ -113,7 +123,11 @@ export default function StaffScreen() {
                 entering={FadeInDown.delay(Math.min(index, 8) * 35).springify().damping(18)}
               >
                 <SwipeableRow
-                  actions={[{ icon: Trash2, label: t('actions.remove'), tone: 'negative', onPress: () => confirmRemove(member.id, member.name) }]}
+                  actions={
+                    isSelf(member)
+                      ? []
+                      : [{ icon: Trash2, label: t('actions.remove'), tone: 'negative', onPress: () => confirmRemove(member.id, member.name) }]
+                  }
                 >
                   <Card
                     padded={false}
@@ -149,6 +163,8 @@ export default function StaffScreen() {
           <TextField label={t('staff.name')} value={name} onChangeText={setName} autoFocus={!editingId} />
           <TextField label={t('staff.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
 
+          {!editingSelf ? (
+            <>
           <Text variant="caption" weight="medium" tone="tertiary" className="px-1">
             {t('staff.role')}
           </Text>
@@ -184,6 +200,8 @@ export default function StaffScreen() {
               );
             })}
           </View>
+            </>
+          ) : null}
 
           <Button label={editingId ? t('common.saveChanges') : t('staff.addTeamMember')} size="lg" fullWidth onPress={submit} />
         </View>

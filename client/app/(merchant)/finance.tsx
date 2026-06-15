@@ -33,6 +33,7 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import { summarize, type FinancePeriod } from '@/features/finance/aggregate';
 import {
   EXPENSE_CATEGORIES,
@@ -49,7 +50,9 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import type { Transaction } from '@/types/models';
 
-export default function FinanceScreen() {
+export default withPermission(FinanceScreen, 'view_finance');
+
+function FinanceScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { colors } = useTheme();

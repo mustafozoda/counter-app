@@ -16,6 +16,7 @@ import {
   Skeleton,
   Text,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import { useCustomer } from '@/features/customers/hooks';
 import { useCancelPlan, useMarkInstallmentPaid, usePlan } from '@/features/financing/hooks';
 import {
@@ -36,7 +37,9 @@ const STATUS_META: Record<DerivedInstallmentStatus, { labelKey: string; tone: 'p
   upcoming: { labelKey: 'plan.statusUpcoming', tone: 'neutral' },
 };
 
-export default function PlanDetailScreen() {
+export default withPermission(PlanDetailScreen, 'view_finance');
+
+function PlanDetailScreen() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

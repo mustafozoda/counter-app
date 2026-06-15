@@ -53,6 +53,7 @@ import {
   useSetProductStatus,
 } from '@/features/products/hooks';
 import type { ProductWithVariants } from '@/features/products/stock';
+import { usePermission } from '@/stores/staff';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import { useTheme } from '@/theme';
@@ -78,6 +79,7 @@ export default function ProductsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
+  const canManageInventory = usePermission('manage_inventory');
 
   const productsQuery = useProducts();
   const categoriesQuery = useCategories();
@@ -209,12 +211,14 @@ export default function ProductsScreen() {
             accessibilityLabel={t('products.catalog')}
             onPress={() => actionsSheet.current?.present()}
           />
-          <IconButton
-            icon={Plus}
-            variant="tonal"
-            accessibilityLabel={t('products.addProduct')}
-            onPress={() => router.push('/product-form')}
-          />
+          {canManageInventory ? (
+            <IconButton
+              icon={Plus}
+              variant="tonal"
+              accessibilityLabel={t('products.addProduct')}
+              onPress={() => router.push('/product-form')}
+            />
+          ) : null}
         </View>
       </View>
 
@@ -231,18 +235,20 @@ export default function ProductsScreen() {
             icon={PackageOpen}
             title={t('products.emptyTitle')}
             message={t('products.emptyMessage')}
-            actionLabel={t('products.addProduct')}
-            onAction={() => router.push('/product-form')}
+            actionLabel={canManageInventory ? t('products.addProduct') : undefined}
+            onAction={canManageInventory ? () => router.push('/product-form') : undefined}
           />
-          <View className="items-center">
-            <Button
-              label={t('products.addSample')}
-              variant="ghost"
-              icon={Sparkles}
-              loading={addSamples.isPending}
-              onPress={() => addSamples.mutate()}
-            />
-          </View>
+          {canManageInventory ? (
+            <View className="items-center">
+              <Button
+                label={t('products.addSample')}
+                variant="ghost"
+                icon={Sparkles}
+                loading={addSamples.isPending}
+                onPress={() => addSamples.mutate()}
+              />
+            </View>
+          ) : null}
         </View>
       ) : (
         <FlashList
