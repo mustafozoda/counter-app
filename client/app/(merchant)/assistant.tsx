@@ -124,7 +124,8 @@ export default function AssistantScreen() {
   }, [messages]);
   const lastUserId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'user') return messages[i].id;
+      const message = messages[i];
+      if (message?.role === 'user') return message.id;
     }
     return null;
   }, [messages]);
@@ -224,7 +225,7 @@ export default function AssistantScreen() {
     const assistantMessage = lastIdx >= 0 ? conversation.messages[lastIdx] : undefined;
     if (!assistantMessage) return;
 
-    const assistantId = conversation.messages[lastIdx].id;
+    const assistantId = assistantMessage.id;
     const history = toWire(conversation.messages.slice(0, lastIdx));
     if (history.length === 0) return;
 

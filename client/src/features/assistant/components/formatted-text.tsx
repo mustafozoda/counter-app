@@ -169,21 +169,22 @@ function TextBlock({ value }: { value: string }) {
   let key = 0;
 
   while (i < lines.length) {
-    const line = lines[i];
+    const line = lines[i] ?? '';
     const trimmed = line.trim();
 
     // Pipe table: a header row followed by a |---|---| separator.
+    const separator = lines[i + 1];
     if (
       trimmed.includes('|') &&
-      i + 1 < lines.length &&
-      lines[i + 1].includes('-') &&
-      TABLE_SEP.test(lines[i + 1])
+      separator !== undefined &&
+      separator.includes('-') &&
+      TABLE_SEP.test(separator)
     ) {
       const header = parseCells(trimmed);
       const rows: string[][] = [];
       let j = i + 2;
-      while (j < lines.length && lines[j].includes('|') && lines[j].trim().length > 0) {
-        rows.push(parseCells(lines[j].trim()));
+      while (j < lines.length && (lines[j]?.includes('|') ?? false) && (lines[j]?.trim().length ?? 0) > 0) {
+        rows.push(parseCells((lines[j] ?? '').trim()));
         j++;
       }
       blocks.push(<TableBlock key={key++} header={header} rows={rows} />);
@@ -199,7 +200,7 @@ function TextBlock({ value }: { value: string }) {
 
     const heading = /^(#{1,3})\s+(.*)$/.exec(trimmed);
     if (heading) {
-      const level = heading[1].length;
+      const level = (heading[1] ?? '').length;
       const variant = level === 1 ? 'h2' : level === 2 ? 'title' : 'body';
       blocks.push(
         <Text
