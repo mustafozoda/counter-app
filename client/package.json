@@ -10,6 +10,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "icons": "node scripts/generate-icons.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,css,md}\""
   },
   "dependencies": {
@@ -74,6 +75,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.1.0",
