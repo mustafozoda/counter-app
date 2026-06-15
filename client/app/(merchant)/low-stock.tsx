@@ -16,6 +16,7 @@ import {
   Text,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import { AdjustStockSheet } from '@/features/products/components/adjust-stock-sheet';
 import { ProductImage } from '@/features/products/components/product-image';
 import { lowStockProducts } from '@/features/products/filtering';
@@ -23,7 +24,9 @@ import { useProducts } from '@/features/products/hooks';
 import { variantLabel, variantStockStatus } from '@/features/products/stock';
 import type { ProductVariant } from '@/types/models';
 
-export default function LowStockScreen() {
+export default withPermission(LowStockScreen, 'manage_inventory');
+
+function LowStockScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const productsQuery = useProducts();

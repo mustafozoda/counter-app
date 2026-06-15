@@ -17,6 +17,7 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import { CurrencySheet } from '@/features/onboarding/currency-sheet';
 import { CURRENCIES } from '@/constants/currencies';
 import { changeLanguage } from '@/i18n';
@@ -27,7 +28,9 @@ import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import { useTheme } from '@/theme';
 
-export default function SettingsScreen() {
+export default withPermission(SettingsScreen, 'manage_settings');
+
+function SettingsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useTranslation();

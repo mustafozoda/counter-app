@@ -18,6 +18,7 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import {
   useCategories,
   useDeleteCategory,
@@ -27,7 +28,9 @@ import {
 import { toast } from '@/stores/toast';
 import type { Category } from '@/types/models';
 
-export default function CategoriesScreen() {
+export default withPermission(CategoriesScreen, 'manage_inventory');
+
+function CategoriesScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const categoriesQuery = useCategories();

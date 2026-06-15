@@ -13,11 +13,15 @@ Project: `https://akhwzgqerwpncphigzmt.supabase.co`
 ## 1. Apply the database schema (one time)
 
 1. Open the Supabase dashboard → **SQL Editor** → **New query**.
-2. Paste the entire contents of [`client/supabase/migrations/0001_init.sql`](client/supabase/migrations/0001_init.sql).
-3. Click **Run**. It creates every table, Row Level Security policy, the atomic
-   RPCs (sale/refund/etc.), and the `store-media` storage bucket.
+2. Paste the entire contents of [`client/supabase/migrations/0001_init.sql`](client/supabase/migrations/0001_init.sql)
+   and click **Run**. It creates every table, Row Level Security policy, the
+   atomic RPCs (sale/refund/etc.), and the `store-media` storage bucket.
+3. Open another **New query**, paste
+   [`client/supabase/migrations/0002_roles.sql`](client/supabase/migrations/0002_roles.sql)
+   and click **Run**. It adds staff invites and role-based access.
 
-> Re-running is safe — it uses `create table if not exists` / `create or replace`.
+> Run them in order (0001 then 0002). Re-running is safe — they use
+> `create table if not exists` / `create or replace`.
 
 ## 2. Verify the storage bucket
 
@@ -67,6 +71,24 @@ the deployed server by setting `EXPO_PUBLIC_CHAT_API_URL` in `client/.env.local`
 to its URL.
 
 ---
+
+## Roles & permissions
+
+- The first person to sign up and finish onboarding becomes the **owner** of
+  that store.
+- The owner opens **More → Staff** (or Settings → Staff) and invites people by
+  email, choosing a role:
+  - **Owner** — everything (incl. staff + settings).
+  - **Manager** — sell, inventory, finance/reports. No staff/settings.
+  - **Cashier** — sell only.
+- Invite an email *before* they sign up; when they register, a database trigger
+  links them to your store with the role you chose, and they skip onboarding.
+  Inviting someone who already has an account links them immediately.
+- Enforcement is in **two layers**: the app hides screens/actions a role can't
+  use, and Row Level Security blocks the data in the database regardless of the
+  UI. Sales/refunds run through `SECURITY DEFINER` functions, so cashiers can
+  always ring up sales.
+- You can't remove or demote yourself, so a store always keeps an owner.
 
 ## How it works (for future you)
 

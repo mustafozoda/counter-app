@@ -6,8 +6,9 @@ import { createLocalId } from '@/lib/id';
 import { persistStorage } from '@/lib/storage';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { uploadImage } from '@/lib/upload';
+import { useAuthStore } from '@/stores/auth';
 import { toast } from '@/stores/toast';
-import type { ReceiptSettings, Store } from '@/types/models';
+import type { ReceiptSettings, StaffRole, Store } from '@/types/models';
 
 export interface StoreSetupInput {
   name: string;
@@ -172,10 +173,20 @@ if (isSupabaseConfigured) {
       return;
     }
     const { data } = await supabase.from('stores').select('*').limit(1).maybeSingle();
-    useStoreProfile.setState({
-      store: data ? rowToStore(data as StoreRow) : null,
-      hasHydrated: true,
-    });
+    const store = data ? rowToStore(data as StoreRow) : null;
+    if (store) {
+      // Resolve the user's real role for this store and reflect it on the user
+      // before we mark hydration done, so role-gated UI never flashes.
+      const { data: member } = await supabase
+        .from('store_members')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .limit(1)
+        .maybeSingle();
+      const role = (member as { role?: StaffRole } | null)?.role ?? 'owner';
+      useAuthStore.setState((s) => (s.user ? { user: { ...s.user, role } } : {}));
+    }
+    useStoreProfile.setState({ store, hasHydrated: true });
   };
 
   void supabase.auth.getSession().then(({ data }) => syncFromSession(data.session));

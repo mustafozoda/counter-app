@@ -18,6 +18,7 @@ import {
   Skeleton,
   Text,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import { useCustomers } from '@/features/customers/hooks';
 import { usePlans } from '@/features/financing/hooks';
 import { planProgress, summarizeFinancing } from '@/features/financing/schedule';
@@ -36,7 +37,9 @@ const STATUS_BADGE: Record<FinancingPlanStatus, { labelKey: string; tone: 'posit
   cancelled: { labelKey: 'financing.statusCancelled', tone: 'neutral' },
 };
 
-export default function FinancingScreen() {
+export default withPermission(FinancingScreen, 'view_finance');
+
+function FinancingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');

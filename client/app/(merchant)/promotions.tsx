@@ -21,6 +21,7 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import {
   useDeletePromotion,
   usePromotions,
@@ -33,7 +34,9 @@ import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import type { PromotionType } from '@/types/models';
 
-export default function PromotionsScreen() {
+export default withPermission(PromotionsScreen, 'manage_inventory');
+
+function PromotionsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');

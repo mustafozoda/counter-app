@@ -19,6 +19,7 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import {
   usePurchaseOrders,
   useReceivePurchaseOrder,
@@ -40,7 +41,9 @@ const PO_BADGE: Record<PurchaseOrderStatus, { labelKey: string; tone: 'positive'
   cancelled: { labelKey: 'suppliers.statusCancelled', tone: 'neutral' },
 };
 
-export default function SuppliersScreen() {
+export default withPermission(SuppliersScreen, 'manage_inventory');
+
+function SuppliersScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { colors } = useTheme();

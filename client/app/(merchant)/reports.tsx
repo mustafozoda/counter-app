@@ -16,6 +16,7 @@ import {
   Skeleton,
   Text,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import { analyze, hourLabel } from '@/features/analytics/aggregate';
 import { useOrders } from '@/features/pos/hooks';
 import { formatMoney } from '@/lib/format';
@@ -24,7 +25,9 @@ import { useTheme } from '@/theme';
 
 type RangeKey = '7' | '30' | '90';
 
-export default function ReportsScreen() {
+export default withPermission(ReportsScreen, 'view_finance');
+
+function ReportsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { colors } = useTheme();

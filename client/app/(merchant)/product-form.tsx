@@ -19,6 +19,7 @@ import {
   TextField,
   useSheetRef,
 } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import type { ProductInput } from '@/api/products';
 import { attributePresetsFor } from '@/features/products/attribute-presets';
 import { CategoryPickerSheet } from '@/features/products/components/picker-sheets';
@@ -71,7 +72,9 @@ function SectionTitle({ children }: { children: string }) {
   );
 }
 
-export default function ProductFormScreen() {
+export default withPermission(ProductFormScreen, 'manage_inventory');
+
+function ProductFormScreen() {
   const params = useLocalSearchParams<{ id?: string; barcode?: string }>();
   const editingId = params.id;
   const router = useRouter();
