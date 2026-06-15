@@ -7,6 +7,8 @@ export interface ChatMessage {
   createdAt: string;
   /** Set when the reply failed, so the bubble can render in an error tone. */
   error?: boolean;
+  /** Data-URI images attached to a user message (vision input). */
+  images?: string[];
 }
 
 export interface Conversation {

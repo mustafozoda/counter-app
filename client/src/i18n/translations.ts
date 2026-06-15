@@ -50,6 +50,10 @@ export const resources = {
         copied: 'Copied',
         regenerate: 'Regenerate',
         scrollDown: 'Scroll to bottom',
+        edit: 'Edit',
+        followUp1: 'Tell me more',
+        followUp2: 'Give an example',
+        followUp3: 'Summarize that',
       },
       home: {
         greetingMorning: 'Good morning',
@@ -944,6 +948,10 @@ export const resources = {
         copied: 'Скопировано',
         regenerate: 'Заново',
         scrollDown: 'Вниз',
+        edit: 'Изменить',
+        followUp1: 'Расскажи подробнее',
+        followUp2: 'Приведи пример',
+        followUp3: 'Кратко суммируй',
       },
       home: {
         greetingMorning: 'Доброе утро',
@@ -1841,6 +1849,10 @@ export const resources = {
         copied: 'Нусха бардошта шуд',
         regenerate: 'Аз нав',
         scrollDown: 'Ба поён',
+        edit: 'Таҳрир',
+        followUp1: 'Бештар нақл кунед',
+        followUp2: 'Мисол оред',
+        followUp3: 'Хулоса кунед',
       },
       home: {
         greetingMorning: 'Субҳ ба хайр',
