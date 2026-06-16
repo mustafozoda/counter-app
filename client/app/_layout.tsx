@@ -56,6 +56,7 @@ export default function RootLayout() {
   const store = useStoreProfile((s) => s.store);
   const storeHydrated = useStoreProfile((s) => s.hasHydrated);
   const storeSyncing = useStoreProfile((s) => s.syncing);
+  const suspended = useStoreProfile((s) => s.suspended);
   const themeMode = usePreferences((s) => s.themeMode);
   const language = usePreferences((s) => s.language);
   const prefsHydrated = usePreferences((s) => s.hasHydrated);
@@ -127,10 +128,13 @@ export default function RootLayout() {
                     <Stack.Protected guard={!signedIn}>
                       <Stack.Screen name="(auth)" />
                     </Stack.Protected>
-                    <Stack.Protected guard={signedIn && !onboarded}>
+                    <Stack.Protected guard={signedIn && suspended}>
+                      <Stack.Screen name="suspended" />
+                    </Stack.Protected>
+                    <Stack.Protected guard={signedIn && !suspended && !onboarded}>
                       <Stack.Screen name="onboarding" />
                     </Stack.Protected>
-                    <Stack.Protected guard={signedIn && onboarded}>
+                    <Stack.Protected guard={signedIn && !suspended && onboarded}>
                       <Stack.Screen name="(merchant)" />
                       <Stack.Screen name="(storefront)" />
                     </Stack.Protected>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { i18n } from '@/i18n';
 import { getActiveStoreId } from '@/lib/active-store';
 import { createLocalId } from '@/lib/id';
 import { persistStorage } from '@/lib/storage';
@@ -35,34 +36,72 @@ export function roleHasPermission(role: StaffMember['role'], permission: Permiss
   return ROLE_PERMISSIONS[role].includes(permission);
 }
 
-export interface StaffInput {
-  id?: string;
+/** Fields the owner sets when creating a brand-new staff login. */
+export interface NewStaffInput {
   name: string;
   email: string;
+  password: string;
   role: StaffMember['role'];
+  phone?: string | null;
+  title?: string | null;
+  note?: string | null;
+  avatarUrl?: string | null;
+}
+
+/** Fields the owner can change on an existing member (no password here). */
+export interface StaffPatch {
+  name?: string;
+  email?: string;
+  role?: StaffMember['role'];
+  phone?: string | null;
+  title?: string | null;
+  note?: string | null;
+  active?: boolean;
+  avatarUrl?: string | null;
 }
 
 interface MemberRow {
   id: string;
+  user_id: string | null;
   name: string;
   email: string;
   avatar_url: string | null;
   role: StaffMember['role'];
+  phone: string | null;
+  title: string | null;
+  note: string | null;
+  active: boolean;
 }
 
 const rowToMember = (row: MemberRow): StaffMember => ({
   id: row.id,
+  userId: row.user_id,
   name: row.name,
   email: row.email,
   avatarUrl: row.avatar_url ?? null,
   role: row.role,
+  phone: row.phone ?? null,
+  title: row.title ?? null,
+  note: row.note ?? null,
+  active: row.active ?? true,
 });
+
+/** Call the owner-only `manage-staff` Edge Function. Returns an error message
+ *  to show the user, or null on success. */
+async function manage(body: Record<string, unknown>): Promise<string | null> {
+  const { data, error } = await supabase.functions.invoke('manage-staff', { body });
+  if (error) return i18n.t('staff.actionFailed');
+  const detail = (data as { error?: string } | null)?.error;
+  return detail ?? null;
+}
 
 interface StaffState {
   members: StaffMember[];
   hasHydrated: boolean;
-  saveMember: (input: StaffInput) => void;
-  removeMember: (id: string) => void;
+  createStaff: (input: NewStaffInput) => Promise<string | null>;
+  updateStaff: (memberId: string, patch: StaffPatch) => Promise<string | null>;
+  setStaffPassword: (memberId: string, password: string) => Promise<string | null>;
+  deleteStaff: (memberId: string) => Promise<string | null>;
   refresh: () => Promise<void>;
   setHasHydrated: (value: boolean) => void;
 }
@@ -74,66 +113,65 @@ const creator = (
   members: [],
   hasHydrated: false,
 
-  saveMember: (input) => {
+  createStaff: async (input) => {
     if (!isSupabaseConfigured) {
-      set(
-        input.id
-          ? {
-              members: get().members.map((m) =>
-                m.id === input.id
-                  ? { ...m, name: input.name, email: input.email, role: input.role }
-                  : m,
-              ),
-            }
-          : {
-              members: [
-                ...get().members,
-                {
-                  id: createLocalId(),
-                  name: input.name,
-                  email: input.email,
-                  avatarUrl: null,
-                  role: input.role,
-                },
-              ],
-            },
-      );
-      return;
+      set({
+        members: [
+          ...get().members,
+          {
+            id: createLocalId(),
+            userId: createLocalId(),
+            name: input.name,
+            email: input.email,
+            avatarUrl: input.avatarUrl ?? null,
+            role: input.role,
+            phone: input.phone ?? null,
+            title: input.title ?? null,
+            note: input.note ?? null,
+            active: true,
+          },
+        ],
+      });
+      return null;
     }
-    void (async () => {
-      if (input.id) {
-        await supabase
-          .from('store_members')
-          .update({ name: input.name, email: input.email, role: input.role })
-          .eq('id', input.id);
-      } else {
-        // RPC links an already-registered user by email (or the signup trigger
-        // links them later); owner-only is enforced server-side.
-        await supabase.rpc('add_store_member', {
-          p_store_id: getActiveStoreId(),
-          p_name: input.name,
-          p_email: input.email,
-          p_role: input.role,
-        });
-      }
-      await get().refresh();
-    })();
+    const error = await manage({ action: 'create', storeId: getActiveStoreId(), ...input });
+    if (!error) await get().refresh();
+    return error;
   },
 
-  removeMember: (id) => {
+  updateStaff: async (memberId, patch) => {
     if (!isSupabaseConfigured) {
-      set({ members: get().members.filter((m) => m.id !== id) });
-      return;
+      set({
+        members: get().members.map((m) => (m.id === memberId ? { ...m, ...patch } : m)),
+      });
+      return null;
     }
-    void (async () => {
-      await supabase.from('store_members').delete().eq('id', id);
-      await get().refresh();
-    })();
+    const error = await manage({ action: 'update', memberId, ...patch });
+    if (!error) await get().refresh();
+    return error;
+  },
+
+  setStaffPassword: async (memberId, password) => {
+    if (!isSupabaseConfigured) return null;
+    return manage({ action: 'password', memberId, password });
+  },
+
+  deleteStaff: async (memberId) => {
+    if (!isSupabaseConfigured) {
+      set({ members: get().members.filter((m) => m.id !== memberId) });
+      return null;
+    }
+    const error = await manage({ action: 'delete', memberId });
+    if (!error) await get().refresh();
+    return error;
   },
 
   refresh: async () => {
     if (!isSupabaseConfigured) return;
-    const { data } = await supabase.from('store_members').select('*').order('created_at');
+    const { data } = await supabase
+      .from('store_members')
+      .select('id, user_id, name, email, avatar_url, role, phone, title, note, active')
+      .order('created_at');
     if (data) set({ members: (data as MemberRow[]).map(rowToMember) });
   },
 

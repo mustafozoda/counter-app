@@ -40,6 +40,9 @@ export default function ProfileScreen() {
   const store = useStoreProfile((s) => s.store);
 
   const role = user?.role ?? 'cashier';
+  // Staff can't self-edit (no self password change) — only the owner manages
+  // accounts, from the Staff page.
+  const isOwner = role === 'owner';
   const shortcuts = SHORTCUTS.filter((s) => roleHasPermission(role, s.permission));
 
   const rows: { label: string; value: string }[] = [
@@ -71,11 +74,13 @@ export default function ProfileScreen() {
             {t('profile.title')}
           </Text>
         </View>
-        <IconButton
-          icon={Pencil}
-          accessibilityLabel={t('profile.edit')}
-          onPress={() => router.push('/profile-edit' as Parameters<typeof router.push>[0])}
-        />
+        {isOwner ? (
+          <IconButton
+            icon={Pencil}
+            accessibilityLabel={t('profile.edit')}
+            onPress={() => router.push('/profile-edit' as Parameters<typeof router.push>[0])}
+          />
+        ) : null}
       </View>
 
       <Animated.View
