@@ -52,6 +52,11 @@ function StaffScreen() {
       >[0],
     );
 
+  const openDetail = (id: string) =>
+    router.push({ pathname: '/staff-detail', params: { id } } as unknown as Parameters<
+      typeof router.push
+    >[0]);
+
   const confirmRemove = (member: StaffMember) =>
     Alert.alert(t('staff.removeMember'), t('staff.removeBody', { name: member.name }), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -140,7 +145,7 @@ function StaffScreen() {
                 <Card
                   padded={false}
                   className="flex-row items-center gap-3 px-4 py-3.5"
-                  onPress={() => openForm(member.id)}
+                  onPress={() => openDetail(member.id)}
                 >
                   {member.avatarUrl ? (
                     <Image
