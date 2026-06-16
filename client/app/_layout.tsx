@@ -1,6 +1,7 @@
 import '../global.css';
 import 'react-native-url-polyfill/auto';
 import '@/lib/notifications';
+import '@/lib/sessions';
 
 import {
   Inter_400Regular,

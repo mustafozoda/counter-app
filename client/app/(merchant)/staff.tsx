@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, ShieldCheck, Trash2, UserPlus } from 'lucide-react-native';
+import { ArrowLeft, BarChart3, History, ShieldCheck, Trash2, UserPlus } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
@@ -80,12 +80,24 @@ function StaffScreen() {
             {t('staff.title')}
           </Text>
         </View>
-        <IconButton
-          icon={UserPlus}
-          variant="tonal"
-          accessibilityLabel={t('staff.addStaff')}
-          onPress={() => openForm()}
-        />
+        <View className="flex-row items-center">
+          <IconButton
+            icon={BarChart3}
+            accessibilityLabel={t('insights.performanceTitle')}
+            onPress={() => router.push('/staff-performance' as Parameters<typeof router.push>[0])}
+          />
+          <IconButton
+            icon={History}
+            accessibilityLabel={t('insights.activityTitle')}
+            onPress={() => router.push('/staff-activity' as Parameters<typeof router.push>[0])}
+          />
+          <IconButton
+            icon={UserPlus}
+            variant="tonal"
+            accessibilityLabel={t('staff.addStaff')}
+            onPress={() => openForm()}
+          />
+        </View>
       </View>
 
       {members.length === 0 ? (

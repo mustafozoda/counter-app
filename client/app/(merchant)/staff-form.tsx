@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -6,9 +7,11 @@ import {
   Briefcase,
   Camera,
   Check,
+  Copy,
   Lock,
   Mail,
   Phone,
+  RefreshCw,
   StickyNote,
   User as UserIcon,
 } from 'lucide-react-native';
@@ -45,6 +48,15 @@ const PERMISSION_LABEL_KEY: Record<Permission, string> = {
   manage_staff: 'staff.permStaff',
   manage_settings: 'staff.permSettings',
 };
+
+// A readable strong password (no look-alike chars). The owner copies it once at
+// set-time — there's no way to read a password back later (it's hashed).
+function generatePassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let out = '';
+  for (let i = 0; i < 10; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
 
 export default withPermission(StaffFormScreen, 'manage_staff');
 
@@ -85,6 +97,12 @@ function StaffFormScreen() {
       quality: 0.6,
     });
     if (!result.canceled && result.assets[0]) setAvatar(result.assets[0].uri);
+  };
+
+  const copyPassword = () => {
+    void Clipboard.setStringAsync(password);
+    haptics.selection();
+    toast.success(t('staff.passwordCopied'));
   };
 
   const save = async () => {
@@ -220,6 +238,34 @@ function StaffFormScreen() {
           autoCapitalize="none"
           helper={t('staff.passwordHint')}
         />
+        <View className="-mt-2 flex-row gap-2 px-1">
+          <PressableScale
+            scaleTo={0.96}
+            haptic="tap"
+            onPress={() => setPassword(generatePassword())}
+            accessibilityRole="button"
+            className="flex-row items-center gap-1.5 rounded-full bg-surface-sunken px-3 py-1.5 dark:bg-surface-elevated"
+          >
+            <RefreshCw size={13} color={colors.inkSecondary} strokeWidth={2.2} />
+            <Text variant="caption" weight="medium" tone="secondary">
+              {t('staff.generate')}
+            </Text>
+          </PressableScale>
+          {password.length > 0 ? (
+            <PressableScale
+              scaleTo={0.96}
+              haptic="tap"
+              onPress={copyPassword}
+              accessibilityRole="button"
+              className="flex-row items-center gap-1.5 rounded-full bg-surface-sunken px-3 py-1.5 dark:bg-surface-elevated"
+            >
+              <Copy size={13} color={colors.inkSecondary} strokeWidth={2.2} />
+              <Text variant="caption" weight="medium" tone="secondary">
+                {t('staff.copyPassword')}
+              </Text>
+            </PressableScale>
+          ) : null}
+        </View>
         <TextField
           label={t('staff.phone')}
           icon={Phone}
