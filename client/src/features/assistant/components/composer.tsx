@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowUp, ImagePlus, Square, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +19,7 @@ const MAX_IMAGES = 4;
 
 /** The chat input row: image attachments + auto-growing field + send / stop. */
 export function Composer({ busy, onSend, onStop }: ComposerProps) {
-  const { colors, gradient } = useTheme();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -160,20 +159,9 @@ export function Composer({ busy, onSend, onStop }: ComposerProps) {
             accessibilityState={{ disabled: !canSend }}
           >
             {canSend ? (
-              <LinearGradient
-                colors={[...gradient]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ArrowUp size={20} color="#FFFFFF" strokeWidth={2.5} />
-              </LinearGradient>
+              <View className="h-11 w-11 items-center justify-center rounded-full bg-primary">
+                <ArrowUp size={20} color={colors.onPrimary} strokeWidth={2.5} />
+              </View>
             ) : (
               <View className="h-11 w-11 items-center justify-center rounded-full bg-surface-sunken dark:bg-surface-elevated">
                 <ArrowUp size={20} color={colors.inkTertiary} strokeWidth={2.5} />

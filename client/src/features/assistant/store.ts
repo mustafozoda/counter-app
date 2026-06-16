@@ -31,6 +31,8 @@ interface AssistantState {
 
   /** Start a fresh conversation and make it active. Returns its id. */
   createConversation: () => string;
+  /** Discard empty chats and open a fresh one — used when (re)entering the screen. */
+  startNewChat: () => string;
   /** Active conversation id, creating/selecting one if needed. */
   ensureConversation: () => string;
   setActive: (id: string) => void;
@@ -72,6 +74,13 @@ const creator = (
     };
     set((s) => ({ conversations: [conversation, ...s.conversations], activeId: id }));
     return id;
+  },
+
+  startNewChat: () => {
+    // Drop empty (unused) chats so reopening lands on a clean one without
+    // cluttering history, then open a fresh conversation.
+    set((s) => ({ conversations: s.conversations.filter((c) => c.messages.length > 0) }));
+    return get().createConversation();
   },
 
   ensureConversation: () => {
