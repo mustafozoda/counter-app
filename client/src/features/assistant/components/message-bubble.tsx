@@ -84,7 +84,7 @@ function MessageBubbleBase({
   canEdit,
 }: MessageBubbleProps) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, gradient } = useTheme();
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -166,11 +166,21 @@ function MessageBubbleBase({
 
         {hasText ? (
           <Pressable onLongPress={copy} delayLongPress={250}>
-            <View className="rounded-3xl rounded-br-lg bg-primary px-4 py-2.5">
+            <LinearGradient
+              colors={[...gradient]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                borderRadius: 22,
+                borderBottomRightRadius: 6,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+              }}
+            >
               <Text variant="body" tone="inverse" selectable>
                 {message.content}
               </Text>
-            </View>
+            </LinearGradient>
           </Pressable>
         ) : null}
 

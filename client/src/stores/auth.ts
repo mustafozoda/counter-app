@@ -13,6 +13,9 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => void;
+  /** Update display name and/or avatar (avatarUrl must already be a public URL). */
+  updateProfile: (patch: { name?: string; avatarUrl?: string | null }) => Promise<void>;
+  changePassword: (password: string) => Promise<void>;
   setHasHydrated: (value: boolean) => void;
 }
 
@@ -40,15 +43,18 @@ function userFromSession(session: Session): User {
 }
 
 const creator =
-  (set: (partial: Partial<AuthState>) => void): AuthState => ({
+  (
+    set: (partial: Partial<AuthState> | ((state: AuthState) => Partial<AuthState>)) => void,
+  ): AuthState => ({
     user: null,
     hasHydrated: false,
 
     signIn: async (email, password) => {
       if (isSupabaseConfigured) {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (data.session) set({ user: userFromSession(data.session) });
+        // `onAuthStateChange` sets the user — together, in the same dispatch, as
+        // the store sync's loading flag — so the layout never flashes onboarding.
         return;
       }
       await fakeNetwork();
@@ -67,7 +73,8 @@ const creator =
         if (error) throw error;
         // No session means email confirmation is on — caller surfaces an error.
         if (!data.session) throw new Error('Email confirmation required');
-        set({ user: userFromSession(data.session) });
+        // `onAuthStateChange` (SIGNED_IN) sets the user alongside the store sync
+        // flag, avoiding an onboarding flash on first login.
         return;
       }
       await fakeNetwork();
@@ -77,6 +84,33 @@ const creator =
     signOut: () => {
       if (isSupabaseConfigured) void supabase.auth.signOut();
       set({ user: null });
+    },
+
+    updateProfile: async (patch) => {
+      if (isSupabaseConfigured) {
+        const meta: Record<string, unknown> = {};
+        if (patch.name !== undefined) meta.name = patch.name;
+        if (patch.avatarUrl !== undefined) meta.avatar_url = patch.avatarUrl;
+        const { error } = await supabase.auth.updateUser({ data: meta });
+        if (error) throw error;
+      }
+      set((s) =>
+        s.user
+          ? {
+              user: {
+                ...s.user,
+                ...(patch.name !== undefined ? { name: patch.name } : {}),
+                ...(patch.avatarUrl !== undefined ? { avatarUrl: patch.avatarUrl } : {}),
+              },
+            }
+          : {},
+      );
+    },
+
+    changePassword: async (password) => {
+      if (!isSupabaseConfigured) return;
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
     },
 
     setHasHydrated: (value) => set({ hasHydrated: value }),

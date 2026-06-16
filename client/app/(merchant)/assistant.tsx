@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowDown, ArrowLeft, History, SquarePen } from 'lucide-react-native';
+import { ArrowDown, ArrowLeft, ArrowUpRight, History, Sparkles, SquarePen } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, PressableScale, Text, useSheetRef } from '@/components/ui';
@@ -53,36 +54,65 @@ function toWire(messages: ChatMessage[]): WireMessage[] {
 
 function AssistantHero({ onPick }: { onPick: (prompt: string) => void }) {
   const { t } = useTranslation();
+  const { gradient, colors } = useTheme();
   const suggestions = [t('assistant.suggest1'), t('assistant.suggest2'), t('assistant.suggest3')];
 
   return (
-    <View className="flex-1 items-center justify-center gap-3 px-8">
-      <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
-        <Text variant="display">✨</Text>
+    <Animated.View
+      entering={FadeIn.duration(300)}
+      className="flex-1 items-center justify-center gap-4 px-7"
+    >
+      <LinearGradient
+        colors={[...gradient]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: 24,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Sparkles size={32} color="#FFFFFF" strokeWidth={2} />
+      </LinearGradient>
+
+      <View className="items-center gap-1.5">
+        <Text variant="h1" weight="bold" className="text-center">
+          {t('assistant.heroTitle')}
+        </Text>
+        <Text variant="body" tone="secondary" className="text-center">
+          {t('assistant.heroSubtitle')}
+        </Text>
       </View>
-      <Text variant="h1" weight="bold" className="text-center">
-        {t('assistant.heroTitle')}
-      </Text>
-      <Text variant="body" tone="secondary" className="text-center">
-        {t('assistant.heroSubtitle')}
-      </Text>
-      <View className="mt-3 w-full gap-2">
-        {suggestions.map((s) => (
-          <PressableScale
+
+      <View className="mt-2 w-full gap-2.5">
+        {suggestions.map((s, i) => (
+          <Animated.View
             key={s}
-            scaleTo={0.98}
-            haptic="tap"
-            onPress={() => onPick(s)}
-            accessibilityRole="button"
-            className="rounded-md border border-hairline bg-surface px-4 py-3 dark:bg-surface-elevated"
+            entering={FadeInDown.delay(120 + i * 70)
+              .springify()
+              .damping(18)}
           >
-            <Text variant="body" tone="secondary">
-              {s}
-            </Text>
-          </PressableScale>
+            <PressableScale
+              scaleTo={0.98}
+              haptic="tap"
+              onPress={() => onPick(s)}
+              accessibilityRole="button"
+              className="flex-row items-center gap-3 rounded-2xl border border-hairline bg-surface px-4 py-3.5 dark:bg-surface-elevated"
+            >
+              <View className="h-8 w-8 items-center justify-center rounded-full bg-primary-tint">
+                <Sparkles size={15} color={colors.primary} strokeWidth={2} />
+              </View>
+              <Text variant="body" tone="secondary" className="flex-1">
+                {s}
+              </Text>
+              <ArrowUpRight size={16} color={colors.inkTertiary} strokeWidth={2} />
+            </PressableScale>
+          </Animated.View>
         ))}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -158,6 +188,7 @@ export default function AssistantScreen() {
         onDone: () => {
           setBusy(false);
           cancelRef.current = null;
+          useAssistantStore.getState().commit(conversationId);
         },
         onError: () => {
           const current = useAssistantStore
@@ -171,6 +202,7 @@ export default function AssistantScreen() {
           });
           setBusy(false);
           cancelRef.current = null;
+          useAssistantStore.getState().commit(conversationId);
         },
       });
     },

@@ -1,5 +1,6 @@
 import '../global.css';
 import 'react-native-url-polyfill/auto';
+import '@/lib/notifications';
 
 import {
   Inter_400Regular,
@@ -22,7 +23,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
-import { I18nManager, Platform, View } from 'react-native';
+import { ActivityIndicator, I18nManager, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
@@ -54,6 +55,7 @@ export default function RootLayout() {
   const authHydrated = useAuthStore((s) => s.hasHydrated);
   const store = useStoreProfile((s) => s.store);
   const storeHydrated = useStoreProfile((s) => s.hasHydrated);
+  const storeSyncing = useStoreProfile((s) => s.syncing);
   const themeMode = usePreferences((s) => s.themeMode);
   const language = usePreferences((s) => s.language);
   const prefsHydrated = usePreferences((s) => s.hasHydrated);
@@ -90,6 +92,11 @@ export default function RootLayout() {
 
   const signedIn = user !== null;
   const onboarded = store !== null;
+  // Signed in, but the store fetch hasn't resolved yet — hold a loader so we
+  // don't flash onboarding before we know whether this user has a store.
+  const resolving = signedIn && storeSyncing;
+
+  const navTheme = navigationThemes[colorScheme === 'dark' ? 'dark' : 'light'];
 
   // On web, frame the app to a phone-width column centered on a dark backdrop
   // so a desktop browser preview matches a real phone. Native fills the screen.
@@ -102,20 +109,33 @@ export default function RootLayout() {
       <KeyboardProvider>
         <View style={isWeb ? { flex: 1, width: '100%', maxWidth: APP_FRAME_WIDTH } : { flex: 1 }}>
           <QueryClientProvider client={queryClient}>
-            <ThemeProvider value={navigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>
+            <ThemeProvider value={navTheme}>
               <BottomSheetModalProvider>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Protected guard={!signedIn}>
-                    <Stack.Screen name="(auth)" />
-                  </Stack.Protected>
-                  <Stack.Protected guard={signedIn && !onboarded}>
-                    <Stack.Screen name="onboarding" />
-                  </Stack.Protected>
-                  <Stack.Protected guard={signedIn && onboarded}>
-                    <Stack.Screen name="(merchant)" />
-                    <Stack.Screen name="(storefront)" />
-                  </Stack.Protected>
-                </Stack>
+                {resolving ? (
+                  <View
+                    style={{
+                      flex: 1,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: navTheme.colors.background,
+                    }}
+                  >
+                    <ActivityIndicator size="large" color={navTheme.colors.primary} />
+                  </View>
+                ) : (
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Protected guard={!signedIn}>
+                      <Stack.Screen name="(auth)" />
+                    </Stack.Protected>
+                    <Stack.Protected guard={signedIn && !onboarded}>
+                      <Stack.Screen name="onboarding" />
+                    </Stack.Protected>
+                    <Stack.Protected guard={signedIn && onboarded}>
+                      <Stack.Screen name="(merchant)" />
+                      <Stack.Screen name="(storefront)" />
+                    </Stack.Protected>
+                  </Stack>
+                )}
                 <ToastHost />
                 <StatusBar style="auto" />
               </BottomSheetModalProvider>
