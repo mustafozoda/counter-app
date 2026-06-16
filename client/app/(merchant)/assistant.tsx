@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ArrowDown, ArrowLeft, ArrowUpRight, History, Sparkles, SquarePen } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Keyboard,
@@ -143,6 +143,13 @@ export default function AssistantScreen() {
   const activeId = useAssistantStore((s) => s.activeId);
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const messages = active?.messages ?? [];
+
+  // Open a fresh chat each time the assistant is entered; prior chats stay in
+  // History. Reopening from the home/menu button never resumes the last one.
+  // useLayoutEffect so the old chat never flashes before the reset.
+  useLayoutEffect(() => {
+    useAssistantStore.getState().startNewChat();
+  }, []);
 
   // Only the latest reply can be regenerated; only the latest prompt edited.
   const lastAssistantId = useMemo(() => {
@@ -318,7 +325,7 @@ export default function AssistantScreen() {
 
   const newChat = () => {
     if (busy) stop();
-    useAssistantStore.getState().createConversation();
+    useAssistantStore.getState().startNewChat();
     historySheet.current?.dismiss();
   };
 

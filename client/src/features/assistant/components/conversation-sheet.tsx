@@ -2,7 +2,7 @@ import { BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { Check, MessageSquarePlus, Pencil, Trash2, X } from 'lucide-react-native';
 import { forwardRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { IconButton, PressableScale, Sheet, Text, type SheetRef } from '@/components/ui';
 import { formatDayLabel } from '@/lib/format';
@@ -44,16 +44,6 @@ export const ConversationSheet = forwardRef<SheetRef, ConversationSheetProps>(
       setRenamingId(null);
       setDraft('');
     };
-
-    const confirmDelete = (conversation: Conversation) =>
-      Alert.alert(t('assistant.deleteChat'), t('assistant.deleteChatBody'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('actions.remove'),
-          style: 'destructive',
-          onPress: () => onDelete(conversation.id),
-        },
-      ]);
 
     const renderItem = ({ item }: { item: Conversation }) => {
       const isActive = item.id === activeId;
@@ -124,7 +114,7 @@ export const ConversationSheet = forwardRef<SheetRef, ConversationSheetProps>(
           <IconButton
             icon={Trash2}
             accessibilityLabel={t('actions.remove')}
-            onPress={() => confirmDelete(item)}
+            onPress={() => onDelete(item.id)}
           />
         </View>
       );
