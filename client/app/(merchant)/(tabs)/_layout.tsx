@@ -2,6 +2,7 @@ import { createMaterialTopTabNavigator } from '@react-navigation/material-top-ta
 import { withLayoutContext } from 'expo-router';
 
 import { FloatingTabBar } from '@/components/ui';
+import { useLowStockNotifier } from '@/features/products/use-low-stock-notifier';
 
 // A bottom-positioned Material Top Tabs navigator gives us a finger-tracking
 // pager: screens slide in/out smoothly as you swipe between them, while the
@@ -10,6 +11,8 @@ const { Navigator } = createMaterialTopTabNavigator();
 const MaterialTopTabs = withLayoutContext(Navigator);
 
 export default function TabsLayout() {
+  useLowStockNotifier();
+
   return (
     <MaterialTopTabs
       tabBar={(props) => <FloatingTabBar {...props} />}

@@ -144,22 +144,29 @@ export default function MoreScreen() {
       </View>
 
       <Animated.View entering={FadeInDown.springify().damping(18)} className="mt-5">
-        <Card className="flex-row items-center gap-4">
-          <Logo size={52} letter={(store?.name.trim()[0] ?? 'C').toUpperCase()} />
-          <View className="flex-1">
-            <Text variant="title" weight="semibold">
-              {store?.name ?? t('home.yourStore')}
-            </Text>
-            <Text variant="caption" tone="secondary">
-              {user?.email}
-            </Text>
-          </View>
-          <View className="rounded-full bg-primary-tint px-3 py-1">
-            <Text variant="micro" weight="semibold" tone="accent">
-              {roleLabel}
-            </Text>
-          </View>
-        </Card>
+        <PressableScale
+          scaleTo={0.99}
+          onPress={() => router.push('/profile' as Parameters<typeof router.push>[0])}
+          accessibilityRole="button"
+        >
+          <Card className="flex-row items-center gap-4">
+            <Logo size={52} letter={(store?.name.trim()[0] ?? 'C').toUpperCase()} />
+            <View className="flex-1">
+              <Text variant="title" weight="semibold">
+                {store?.name ?? t('home.yourStore')}
+              </Text>
+              <Text variant="caption" tone="secondary">
+                {user?.email}
+              </Text>
+            </View>
+            <View className="rounded-full bg-primary-tint px-3 py-1">
+              <Text variant="micro" weight="semibold" tone="accent">
+                {roleLabel}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={colors.inkTertiary} strokeWidth={2} />
+          </Card>
+        </PressableScale>
       </Animated.View>
 
       <Animated.View

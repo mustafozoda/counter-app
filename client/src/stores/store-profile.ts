@@ -27,6 +27,9 @@ interface StoreProfileState {
   store: Store | null;
   firstProductDraft: FirstProductDraft | null;
   hasHydrated: boolean;
+  /** A post-login store fetch is in flight; the app shows a loader meanwhile
+   *  so it never flashes onboarding before the real status resolves. */
+  syncing: boolean;
   completeSetup: (input: StoreSetupInput, firstProduct: FirstProductDraft | null) => void;
   clearFirstProductDraft: () => void;
   updateStore: (patch: Partial<Omit<Store, 'id' | 'createdAt'>>) => void;
@@ -79,6 +82,7 @@ const creator = (
   store: null,
   firstProductDraft: null,
   hasHydrated: false,
+  syncing: false,
 
   completeSetup: (input, firstProduct) => {
     if (!isSupabaseConfigured) {
@@ -169,9 +173,18 @@ export const useStoreProfile = isSupabaseConfigured
 if (isSupabaseConfigured) {
   const syncFromSession = async (session: Session | null) => {
     if (!session) {
-      useStoreProfile.setState({ store: null, firstProductDraft: null, hasHydrated: true });
+      useStoreProfile.setState({
+        store: null,
+        firstProductDraft: null,
+        hasHydrated: true,
+        syncing: false,
+      });
       return;
     }
+    // A session just appeared but we don't yet know if this user has a store.
+    // Flag the in-flight fetch so the layout shows a loader instead of briefly
+    // flashing the onboarding screen before the real status resolves.
+    useStoreProfile.setState({ syncing: true });
     const { data } = await supabase.from('stores').select('*').limit(1).maybeSingle();
     const store = data ? rowToStore(data as StoreRow) : null;
     if (store) {
@@ -186,7 +199,7 @@ if (isSupabaseConfigured) {
       const role = (member as { role?: StaffRole } | null)?.role ?? 'owner';
       useAuthStore.setState((s) => (s.user ? { user: { ...s.user, role } } : {}));
     }
-    useStoreProfile.setState({ store, hasHydrated: true });
+    useStoreProfile.setState({ store, hasHydrated: true, syncing: false });
   };
 
   void supabase.auth.getSession().then(({ data }) => syncFromSession(data.session));

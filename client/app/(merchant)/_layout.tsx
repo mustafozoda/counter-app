@@ -29,6 +29,8 @@ export default function MerchantLayout() {
       <Stack.Screen name="reports" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="staff" />
+      <Stack.Screen name="profile" />
+      <Stack.Screen name="profile-edit" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="assistant" options={{ animation: 'slide_from_right' }} />
     </Stack>
