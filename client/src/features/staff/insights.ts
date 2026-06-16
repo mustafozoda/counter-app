@@ -45,6 +45,37 @@ export function useStaffSales(range: StatRange) {
   });
 }
 
+export interface StaffHours {
+  userId: string;
+  minutes: number;
+  lastSeen: string | null;
+}
+
+interface StaffHoursRow {
+  user_id: string;
+  minutes: number;
+  last_seen: string | null;
+}
+
+/** Per-staff active minutes + last-seen for a period (owner-only RPC). */
+export function useStaffHours(range: StatRange) {
+  return useQuery({
+    queryKey: ['staff-hours', range],
+    queryFn: async (): Promise<StaffHours[]> => {
+      const { data, error } = await supabase.rpc('staff_hours', {
+        p_store_id: getActiveStoreId(),
+        p_since: sinceFor(range),
+      });
+      if (error || !data) return [];
+      return (data as StaffHoursRow[]).map((r) => ({
+        userId: r.user_id,
+        minutes: Number(r.minutes),
+        lastSeen: r.last_seen,
+      }));
+    },
+  });
+}
+
 export interface ActivityEntry {
   id: string;
   /** 'sale' | 'refund' | 'restock' | 'adjustment' | 'return' */

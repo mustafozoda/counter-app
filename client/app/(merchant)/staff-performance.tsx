@@ -17,7 +17,7 @@ import {
   Text,
 } from '@/components/ui';
 import { withPermission } from '@/components/require-permission';
-import { useStaffSales, type StatRange } from '@/features/staff/insights';
+import { useStaffHours, useStaffSales, type StatRange } from '@/features/staff/insights';
 import { useStaffStore } from '@/stores/staff';
 import { useStoreProfile } from '@/stores/store-profile';
 import { STAGGER_MS, useTheme } from '@/theme';
@@ -32,6 +32,7 @@ function StaffPerformanceScreen() {
   const members = useStaffStore((s) => s.members);
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'USD');
   const salesQuery = useStaffSales(range);
+  const hoursQuery = useStaffHours(range);
 
   const rangeOptions: { value: StatRange; label: string }[] = [
     { value: 'today', label: t('insights.today') },
@@ -41,14 +42,21 @@ function StaffPerformanceScreen() {
   ];
 
   const board = useMemo(() => {
-    const byUser = new Map((salesQuery.data ?? []).map((s) => [s.userId, s]));
+    const bySales = new Map((salesQuery.data ?? []).map((s) => [s.userId, s]));
+    const byHours = new Map((hoursQuery.data ?? []).map((h) => [h.userId, h]));
     return members
       .map((m) => {
-        const stat = m.userId ? byUser.get(m.userId) : undefined;
-        return { member: m, salesCount: stat?.salesCount ?? 0, revenue: stat?.revenue ?? 0 };
+        const stat = m.userId ? bySales.get(m.userId) : undefined;
+        const hrs = m.userId ? byHours.get(m.userId) : undefined;
+        return {
+          member: m,
+          salesCount: stat?.salesCount ?? 0,
+          revenue: stat?.revenue ?? 0,
+          minutes: hrs?.minutes ?? 0,
+        };
       })
       .sort((a, b) => b.revenue - a.revenue);
-  }, [members, salesQuery.data]);
+  }, [members, salesQuery.data, hoursQuery.data]);
 
   const totalSales = board.reduce((sum, r) => sum + r.salesCount, 0);
   const totalRevenue = board.reduce((sum, r) => sum + r.revenue, 0);
@@ -130,7 +138,8 @@ function StaffPerformanceScreen() {
                     {row.member.name}
                   </Text>
                   <Text variant="caption" tone="tertiary">
-                    {t('insights.salesCount', { count: row.salesCount })}
+                    {t('insights.salesCount', { count: row.salesCount })} ·{' '}
+                    {t('insights.hours', { h: (row.minutes / 60).toFixed(1) })}
                   </Text>
                 </View>
                 <CurrencyText amount={row.revenue} currency={currency} variant="body" weight="bold" />
