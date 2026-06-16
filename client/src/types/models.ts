@@ -42,8 +42,25 @@ export interface User {
   role: StaffRole;
 }
 
-/** A user in their staff-management capacity (same shape; clearer intent). */
-export type StaffMember = User;
+/**
+ * A staff member as managed by the owner. `id` is the `store_members` row id;
+ * `userId` is the auth account the owner provisioned for them.
+ */
+export interface StaffMember {
+  id: Id;
+  userId: Id | null;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  role: StaffRole;
+  phone: string | null;
+  /** Job title / position. */
+  title: string | null;
+  /** Owner's private note about this member. */
+  note: string | null;
+  /** Suspended members keep their login but lose all store access. */
+  active: boolean;
+}
 
 // ---------------------------------------------------------------------------
 // Catalog

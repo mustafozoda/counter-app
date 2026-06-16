@@ -30,6 +30,8 @@ interface StoreProfileState {
   /** A post-login store fetch is in flight; the app shows a loader meanwhile
    *  so it never flashes onboarding before the real status resolves. */
   syncing: boolean;
+  /** The signed-in member was suspended by the owner — show a blocked screen. */
+  suspended: boolean;
   completeSetup: (input: StoreSetupInput, firstProduct: FirstProductDraft | null) => void;
   clearFirstProductDraft: () => void;
   updateStore: (patch: Partial<Omit<Store, 'id' | 'createdAt'>>) => void;
@@ -83,6 +85,7 @@ const creator = (
   firstProductDraft: null,
   hasHydrated: false,
   syncing: false,
+  suspended: false,
 
   completeSetup: (input, firstProduct) => {
     if (!isSupabaseConfigured) {
@@ -153,7 +156,7 @@ const creator = (
     })();
   },
 
-  reset: () => set({ store: null, firstProductDraft: null }),
+  reset: () => set({ store: null, firstProductDraft: null, suspended: false }),
 
   setHasHydrated: (value) => set({ hasHydrated: value }),
 });
@@ -178,6 +181,7 @@ if (isSupabaseConfigured) {
         firstProductDraft: null,
         hasHydrated: true,
         syncing: false,
+        suspended: false,
       });
       return;
     }
@@ -187,6 +191,7 @@ if (isSupabaseConfigured) {
     useStoreProfile.setState({ syncing: true });
     const { data } = await supabase.from('stores').select('*').limit(1).maybeSingle();
     const store = data ? rowToStore(data as StoreRow) : null;
+    let suspended = false;
     if (store) {
       // Resolve the user's real role for this store and reflect it on the user
       // before we mark hydration done, so role-gated UI never flashes.
@@ -198,8 +203,13 @@ if (isSupabaseConfigured) {
         .maybeSingle();
       const role = (member as { role?: StaffRole } | null)?.role ?? 'owner';
       useAuthStore.setState((s) => (s.user ? { user: { ...s.user, role } } : {}));
+    } else {
+      // No visible store: tell a brand-new user apart from a suspended one
+      // (RLS hides the store + membership from suspended members).
+      const { data: status } = await supabase.rpc('my_account_status');
+      suspended = status === 'suspended';
     }
-    useStoreProfile.setState({ store, hasHydrated: true, syncing: false });
+    useStoreProfile.setState({ store, suspended, hasHydrated: true, syncing: false });
   };
 
   void supabase.auth.getSession().then(({ data }) => syncFromSession(data.session));

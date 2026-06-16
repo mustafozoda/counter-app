@@ -29,6 +29,7 @@ export default function MerchantLayout() {
       <Stack.Screen name="reports" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="staff" />
+      <Stack.Screen name="staff-form" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="profile-edit" />
       <Stack.Screen name="notifications" />
