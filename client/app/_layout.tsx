@@ -103,14 +103,23 @@ export default function RootLayout() {
 
   // On web, frame the app to a phone-width column centered on a dark backdrop
   // so a desktop browser preview matches a real phone. Native fills the screen.
+  //
+  // The column is centered with `alignSelf` on the column itself, NOT with
+  // `alignItems: 'center'` on the root: KeyboardProvider renders a wrapper view
+  // between the root and this column, and that wrapper collapses to 0 width
+  // under a centering parent — which blanks the entire web app.
   const isWeb = Platform.OS === 'web';
 
   return (
-    <GestureHandlerRootView
-      style={isWeb ? { flex: 1, alignItems: 'center', backgroundColor: '#000000' } : { flex: 1 }}
-    >
+    <GestureHandlerRootView style={isWeb ? { flex: 1, backgroundColor: '#000000' } : { flex: 1 }}>
       <KeyboardProvider>
-        <View style={isWeb ? { flex: 1, width: '100%', maxWidth: APP_FRAME_WIDTH } : { flex: 1 }}>
+        <View
+          style={
+            isWeb
+              ? { flex: 1, width: '100%', maxWidth: APP_FRAME_WIDTH, alignSelf: 'center' }
+              : { flex: 1 }
+          }
+        >
           <QueryClientProvider client={queryClient}>
             <ThemeProvider value={navTheme}>
               <BottomSheetModalProvider>
