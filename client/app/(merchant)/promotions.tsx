@@ -113,9 +113,9 @@ function PromotionsScreen() {
   return (
     <Screen padded={false}>
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <View className="flex-row items-center gap-3">
+        <View className="flex-1 flex-row items-center gap-3">
           <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
-          <Text variant="h1" weight="bold">
+          <Text variant="h1" weight="bold" numberOfLines={1} className="flex-1">
             {t('promotions.title')}
           </Text>
         </View>
