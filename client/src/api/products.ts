@@ -42,6 +42,14 @@ export interface ProductInput {
   variants: VariantInput[];
 }
 
+export interface ReceiveStockInput {
+  variantId: Id;
+  qty: number;
+  unitCost: number;
+  supplierId: Id | null;
+  reason: string | null;
+}
+
 export interface CategoryInput {
   id?: Id;
   name: string;
@@ -71,6 +79,8 @@ export interface ProductsApi {
     type: StockMovementType,
     reason: string | null,
   ): Promise<void>;
+  /** Purchase-style restock: bump stock + set last cost + supplier + log expense. */
+  receiveStock(input: ReceiveStockInput): Promise<void>;
   listMovements(productId: Id): Promise<StockMovement[]>;
   findByBarcode(code: string): Promise<BarcodeHit | null>;
   listCategories(): Promise<Category[]>;
@@ -267,6 +277,30 @@ export class LocalProductsApi implements ProductsApi {
       createdAt: new Date().toISOString(),
     });
     await this.save();
+  }
+
+  async receiveStock(input: ReceiveStockInput): Promise<void> {
+    await this.adjustStock(input.variantId, input.qty, 'restock', input.reason);
+    const doc = await this.load();
+    const variant = doc.variants.find((v) => v.id === input.variantId);
+    const product = variant ? doc.products.find((p) => p.id === variant.productId) : null;
+    if (product) {
+      if (input.unitCost > 0) product.cost = input.unitCost; // last-cost
+      if (input.supplierId && product.supplierId === null) product.supplierId = input.supplierId;
+      await this.save();
+    }
+    if (input.unitCost > 0) {
+      // Dynamic import avoids a products↔orders module cycle.
+      const { ordersApi } = await import('./orders');
+      await ordersApi.addTransaction({
+        type: 'expense',
+        category: 'inventory',
+        amount: Math.round(input.unitCost * input.qty * 100) / 100,
+        note: input.reason ?? 'Stock received',
+        date: new Date().toISOString(),
+        linkedOrderId: null,
+      });
+    }
   }
 
   async listMovements(productId: Id): Promise<StockMovement[]> {
@@ -584,6 +618,17 @@ export class SupabaseProductsApi implements ProductsApi {
       p_qty_delta: qtyDelta,
       p_type: type,
       p_reason: reason,
+    });
+    if (error) throw error;
+  }
+
+  async receiveStock(input: ReceiveStockInput): Promise<void> {
+    const { error } = await supabase.rpc('receive_stock', {
+      p_variant_id: input.variantId,
+      p_qty: input.qty,
+      p_unit_cost: input.unitCost,
+      p_supplier_id: input.supplierId,
+      p_reason: input.reason,
     });
     if (error) throw error;
   }

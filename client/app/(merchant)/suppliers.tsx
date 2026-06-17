@@ -22,7 +22,6 @@ import {
 import { withPermission } from '@/components/require-permission';
 import {
   usePurchaseOrders,
-  useReceivePurchaseOrder,
   useSaveSupplier,
   useSuppliers,
 } from '@/features/suppliers/hooks';
@@ -37,6 +36,7 @@ type Tab = 'suppliers' | 'orders';
 const PO_BADGE: Record<PurchaseOrderStatus, { labelKey: string; tone: 'positive' | 'caution' | 'neutral' | 'info' }> = {
   draft: { labelKey: 'suppliers.statusDraft', tone: 'neutral' },
   ordered: { labelKey: 'suppliers.statusOrdered', tone: 'info' },
+  partial: { labelKey: 'suppliers.statusPartial', tone: 'caution' },
   received: { labelKey: 'suppliers.statusReceived', tone: 'positive' },
   cancelled: { labelKey: 'suppliers.statusCancelled', tone: 'neutral' },
 };
@@ -52,7 +52,6 @@ function SuppliersScreen() {
   const suppliersQuery = useSuppliers();
   const poQuery = usePurchaseOrders();
   const saveSupplier = useSaveSupplier();
-  const receivePo = useReceivePurchaseOrder();
 
   const [tab, setTab] = useState<Tab>('suppliers');
   const supplierSheet = useSheetRef();
@@ -183,7 +182,10 @@ function SuppliersScreen() {
                 key={po.id}
                 entering={FadeInDown.delay(Math.min(index, 8) * 35).springify().damping(18)}
               >
-                <Card className="gap-3">
+                <Card
+                  className="gap-3"
+                  onPress={() => router.push({ pathname: '/purchase-order/[id]', params: { id: po.id } })}
+                >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-1">
                       <Text variant="body" weight="semibold">
@@ -199,22 +201,14 @@ function SuppliersScreen() {
                     <Text variant="title" weight="semibold" tabular>
                       {formatMoney(po.totalCost, currency)}
                     </Text>
-                    {po.status === 'ordered' ? (
-                      <Button
-                        label={t('suppliers.receiveStock')}
-                        size="sm"
-                        loading={receivePo.isPending}
-                        onPress={() =>
-                          receivePo.mutate(po.id, {
-                            onSuccess: () =>
-                              toast.success(
-                                t('suppliers.stockReceived'),
-                                t('suppliers.unitsAdded', { count: units }),
-                              ),
-                          })
-                        }
-                      />
-                    ) : null}
+                    <View className="flex-row items-center gap-1.5">
+                      {po.status === 'ordered' || po.status === 'partial' ? (
+                        <Text variant="caption" tone="accent" weight="medium">
+                          {t('suppliers.reviewReceive')}
+                        </Text>
+                      ) : null}
+                      <ChevronRight size={16} color={colors.inkTertiary} strokeWidth={2} />
+                    </View>
                   </View>
                 </Card>
               </Animated.View>

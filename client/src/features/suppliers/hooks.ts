@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   suppliersApi,
   type PurchaseOrderInput,
+  type PurchaseOrderReceipt,
   type SupplierInput,
 } from '@/api/suppliers';
 import { orderKeys } from '@/features/pos/hooks';
@@ -13,6 +14,7 @@ export const supplierKeys = {
   all: ['suppliers'] as const,
   detail: (id: Id) => ['suppliers', id] as const,
   purchaseOrders: ['purchase-orders'] as const,
+  purchaseOrder: (id: Id) => ['purchase-orders', id] as const,
 };
 
 export function useSuppliers() {
@@ -27,6 +29,13 @@ export function usePurchaseOrders() {
   return useQuery({
     queryKey: supplierKeys.purchaseOrders,
     queryFn: () => suppliersApi.listPurchaseOrders(),
+  });
+}
+
+export function usePurchaseOrder(id: Id) {
+  return useQuery({
+    queryKey: supplierKeys.purchaseOrder(id),
+    queryFn: () => suppliersApi.getPurchaseOrder(id),
   });
 }
 
@@ -60,6 +69,20 @@ export function useReceivePurchaseOrder() {
     mutationFn: (id: Id) => suppliersApi.receivePurchaseOrder(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: supplierKeys.purchaseOrders });
+      void queryClient.invalidateQueries({ queryKey: productKeys.all });
+      void queryClient.invalidateQueries({ queryKey: orderKeys.transactions });
+    },
+  });
+}
+
+export function useReceivePurchaseOrderItems() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: Id; receipts: PurchaseOrderReceipt[] }) =>
+      suppliersApi.receivePurchaseOrderItems(args.id, args.receipts),
+    onSuccess: (_data, args) => {
+      void queryClient.invalidateQueries({ queryKey: supplierKeys.purchaseOrders });
+      void queryClient.invalidateQueries({ queryKey: supplierKeys.purchaseOrder(args.id) });
       void queryClient.invalidateQueries({ queryKey: productKeys.all });
       void queryClient.invalidateQueries({ queryKey: orderKeys.transactions });
     },

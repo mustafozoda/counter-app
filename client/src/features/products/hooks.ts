@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
 import { i18n } from '@/i18n';
-import { productsApi, type CategoryInput, type ProductInput } from '@/api/products';
+import {
+  productsApi,
+  type CategoryInput,
+  type ProductInput,
+  type ReceiveStockInput,
+} from '@/api/products';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import type { Id, ProductStatus, StockMovementType } from '@/types/models';
@@ -93,6 +98,19 @@ export function useAdjustStock() {
     onSuccess: (_data, args) => {
       void queryClient.invalidateQueries({ queryKey: productKeys.all });
       void queryClient.invalidateQueries({ queryKey: productKeys.movements(args.productId) });
+    },
+  });
+}
+
+export function useReceiveStock() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { input: ReceiveStockInput; productId: Id }) =>
+      productsApi.receiveStock(args.input),
+    onSuccess: (_data, args) => {
+      void queryClient.invalidateQueries({ queryKey: productKeys.all });
+      void queryClient.invalidateQueries({ queryKey: productKeys.movements(args.productId) });
+      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
   });
 }

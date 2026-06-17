@@ -345,6 +345,8 @@ export default function ProductDetailScreen() {
         ref={adjustSheet}
         variant={adjusting}
         productId={product.id}
+        defaultCost={product.cost}
+        supplierId={product.supplierId}
         dismiss={() => adjustSheet.current?.dismiss()}
       />
     </Screen>
