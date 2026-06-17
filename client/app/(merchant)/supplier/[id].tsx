@@ -23,8 +23,8 @@ import {
 import { withPermission } from '@/components/require-permission';
 import { purchaseOrderTotal } from '@/api/suppliers';
 import { ProductImage } from '@/features/products/components/product-image';
-import { useProducts } from '@/features/products/hooks';
-import { variantLabel } from '@/features/products/stock';
+import { useProducts, useSaveProduct } from '@/features/products/hooks';
+import { generateSku, variantLabel } from '@/features/products/stock';
 import {
   useCreatePurchaseOrder,
   useDeleteSupplier,
@@ -58,9 +58,14 @@ function SupplierDetailScreen() {
   const productsQuery = useProducts();
   const createPo = useCreatePurchaseOrder();
   const deleteSupplier = useDeleteSupplier();
+  const saveProduct = useSaveProduct();
 
   const pickerSheet = useSheetRef();
   const [draft, setDraft] = useState<Record<string, DraftLine>>({});
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newCost, setNewCost] = useState('');
+  const [newPrice, setNewPrice] = useState('');
 
   const supplier = supplierQuery.data;
   const products = productsQuery.data ?? [];
@@ -92,6 +97,66 @@ function SupplierDetailScreen() {
 
   const setLine = (variantId: string, patch: Partial<DraftLine>, base: DraftLine) =>
     setDraft((prev) => ({ ...prev, [variantId]: { ...base, ...prev[variantId], ...patch } }));
+
+  // Create a slim product on the fly and drop it straight into the draft order,
+  // already linked to this supplier so receiving fills in nothing extra.
+  const createItem = async () => {
+    const name = newName.trim();
+    if (name.length < 2) {
+      toast.error(t('po.itemNameNeeded'), t('po.itemNameNeededBody'));
+      return;
+    }
+    const parsedCost = Number.parseFloat(newCost.replace(',', '.'));
+    const parsedPrice = Number.parseFloat(newPrice.replace(',', '.'));
+    const cost = Number.isFinite(parsedCost) && parsedCost > 0 ? parsedCost : 0;
+    try {
+      const product = await saveProduct.mutateAsync({
+        input: {
+          name,
+          description: '',
+          brand: null,
+          categoryId: null,
+          supplierId: supplier.id,
+          images: [],
+          cost,
+          basePrice: Number.isFinite(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0,
+          taxRate: null,
+          status: 'active',
+          variants: [
+            {
+              attributes: {},
+              sku: generateSku(name, []),
+              barcode: null,
+              stockQty: 0,
+              priceOverride: null,
+              lowStockThreshold: 5,
+            },
+          ],
+        },
+      });
+      const variant = product.variants[0];
+      if (variant) {
+        setLine(
+          variant.id,
+          { qty: 1 },
+          {
+            variantId: variant.id,
+            productName: product.name,
+            variantLabel: variantLabel(variant),
+            qty: 0,
+            unitCost: product.cost,
+          },
+        );
+      }
+      toast.success(t('po.itemCreated'), product.name);
+      setNewName('');
+      setNewCost('');
+      setNewPrice('');
+      setCreating(false);
+    } catch {
+      toast.error(t('po.itemCreateFailed'));
+    }
+  };
 
   const submitPo = () => {
     if (draftLines.length === 0) {
@@ -217,14 +282,81 @@ function SupplierDetailScreen() {
         </Animated.View>
       ) : null}
 
-      <Sheet ref={pickerSheet} title={t('suppliers.addProducts')} snapPoints={['70%']}>
-        <ScrollView contentContainerClassName="gap-2 pb-6" showsVerticalScrollIndicator={false}>
-          {products.length === 0 ? (
-            <Text variant="body" tone="tertiary" className="py-6 text-center">
-              {t('suppliers.noProductsYet')}
-            </Text>
-          ) : (
-            products.flatMap((product) =>
+      <Sheet
+        ref={pickerSheet}
+        title={creating ? t('po.newItem') : t('suppliers.addProducts')}
+        snapPoints={['70%']}
+        onDismiss={() => setCreating(false)}
+      >
+        {creating ? (
+          <View className="gap-4">
+            <TextField label={t('po.itemName')} value={newName} onChangeText={setNewName} autoFocus />
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <TextField
+                  label={t('stock.unitCost')}
+                  prefix={symbol}
+                  value={newCost}
+                  onChangeText={setNewCost}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View className="flex-1">
+                <TextField
+                  label={t('po.salePrice')}
+                  prefix={symbol}
+                  value={newPrice}
+                  onChangeText={setNewPrice}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Button
+                  label={t('common.cancel')}
+                  variant="secondary"
+                  fullWidth
+                  onPress={() => setCreating(false)}
+                />
+              </View>
+              <View className="flex-1">
+                <Button
+                  label={t('po.createAndAdd')}
+                  fullWidth
+                  loading={saveProduct.isPending}
+                  onPress={createItem}
+                />
+              </View>
+            </View>
+          </View>
+        ) : (
+          <ScrollView contentContainerClassName="gap-2 pb-6" showsVerticalScrollIndicator={false}>
+            <PressableScale
+              scaleTo={0.98}
+              haptic="selection"
+              onPress={() => setCreating(true)}
+              accessibilityRole="button"
+              className="mb-1 flex-row items-center gap-3 rounded-md border border-dashed border-hairline px-3 py-3"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-tint">
+                <Plus size={18} color={colors.primary} strokeWidth={2} />
+              </View>
+              <View className="flex-1">
+                <Text variant="body" weight="semibold">
+                  {t('po.newItem')}
+                </Text>
+                <Text variant="caption" tone="tertiary">
+                  {t('po.newItemHint')}
+                </Text>
+              </View>
+            </PressableScale>
+            {products.length === 0 ? (
+              <Text variant="body" tone="tertiary" className="py-6 text-center">
+                {t('suppliers.noProductsYet')}
+              </Text>
+            ) : (
+              products.flatMap((product) =>
               product.variants.map((variant) => {
                 const inDraft = (draft[variant.id]?.qty ?? 0) > 0;
                 const base: DraftLine = {
@@ -260,7 +392,8 @@ function SupplierDetailScreen() {
               }),
             )
           )}
-        </ScrollView>
+          </ScrollView>
+        )}
       </Sheet>
     </Screen>
   );
