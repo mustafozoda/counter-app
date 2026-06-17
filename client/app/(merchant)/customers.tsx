@@ -39,14 +39,14 @@ export default function CustomersScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <View className="flex-row items-center gap-3">
+        <View className="flex-1 flex-row items-center gap-3">
           <IconButton icon={ArrowLeft} accessibilityLabel={t('actions.back')} onPress={() => router.back()} />
-          <View>
-            <Text variant="h1" weight="bold">
+          <View className="flex-1">
+            <Text variant="h1" weight="bold" numberOfLines={1}>
               {t('customers.title')}
             </Text>
             {customersQuery.data && customersQuery.data.length > 0 ? (
-              <Text variant="caption" tone="tertiary">
+              <Text variant="caption" tone="tertiary" numberOfLines={1}>
                 {t('customers.total', { count: customersQuery.data.length })}
               </Text>
             ) : null}

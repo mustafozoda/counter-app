@@ -332,7 +332,7 @@ function MatrixField({
   const { colors } = useTheme();
   return (
     <View style={{ flex }} className="gap-1">
-      <Text variant="micro" weight="medium" tone="tertiary">
+      <Text variant="micro" weight="medium" tone="tertiary" numberOfLines={1}>
         {label}
       </Text>
       <View
