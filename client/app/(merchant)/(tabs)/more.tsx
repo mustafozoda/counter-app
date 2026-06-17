@@ -21,7 +21,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card, Logo, PressableScale, Screen, SegmentedControl, Text } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth';
 import { usePreferences, type ThemeMode } from '@/stores/preferences';
-import { roleHasPermission, type Permission } from '@/stores/staff';
+import { effectivePermission, type Permission } from '@/stores/staff';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
 import { STAGGER_MS, useTheme } from '@/theme';
@@ -45,6 +45,7 @@ const MENU: MenuEntry[] = [
     descKey: 'assistant.menuDesc',
     phase: 'AI',
     href: '/assistant',
+    permission: 'use_assistant',
   },
   {
     icon: Users,
@@ -125,8 +126,11 @@ export default function MoreScreen() {
 
   const themeOptions = THEME_VALUES.map((value) => ({ value, label: t(`more.${value}`) }));
   const role = user?.role ?? 'cashier';
+  const overrides = user?.permissions;
   const roleLabel = t(`roles.${role}`);
-  const menu = MENU.filter((entry) => !entry.permission || roleHasPermission(role, entry.permission));
+  const menu = MENU.filter(
+    (entry) => !entry.permission || effectivePermission(role, overrides, entry.permission),
+  );
 
   const confirmSignOut = () => {
     Alert.alert(t('more.signOut'), t('more.signOutConfirm'), [

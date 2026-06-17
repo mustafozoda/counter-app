@@ -14,26 +14,54 @@ export type Permission =
   | 'sell'
   | 'manage_inventory'
   | 'view_finance'
+  | 'use_assistant'
   | 'manage_staff'
   | 'manage_settings';
 
-/** Role → permission matrix (§7 "role-based permissions"). */
+/** Role → permission matrix (§7 "role-based permissions"). The default a member
+ *  starts with; the owner can override individual entries per member. */
 export const ROLE_PERMISSIONS: Record<StaffMember['role'], Permission[]> = {
-  owner: ['sell', 'manage_inventory', 'view_finance', 'manage_staff', 'manage_settings'],
-  manager: ['sell', 'manage_inventory', 'view_finance'],
-  cashier: ['sell'],
+  owner: [
+    'sell',
+    'manage_inventory',
+    'view_finance',
+    'use_assistant',
+    'manage_staff',
+    'manage_settings',
+  ],
+  manager: ['sell', 'manage_inventory', 'view_finance', 'use_assistant'],
+  cashier: ['sell', 'use_assistant'],
 };
+
+/** Permissions the owner can grant/revoke per member (owner-only ones excluded). */
+export const ASSIGNABLE_PERMISSIONS: Permission[] = [
+  'sell',
+  'manage_inventory',
+  'view_finance',
+  'use_assistant',
+];
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   sell: 'Ring up sales',
   manage_inventory: 'Manage inventory',
   view_finance: 'View finances',
+  use_assistant: 'Use assistant',
   manage_staff: 'Manage staff',
   manage_settings: 'Change settings',
 };
 
 export function roleHasPermission(role: StaffMember['role'], permission: Permission): boolean {
   return ROLE_PERMISSIONS[role].includes(permission);
+}
+
+/** Effective permission for a member: explicit override wins, else role default. */
+export function effectivePermission(
+  role: StaffMember['role'],
+  overrides: Record<string, boolean> | undefined,
+  permission: Permission,
+): boolean {
+  const override = overrides?.[permission];
+  return override !== undefined ? override : roleHasPermission(role, permission);
 }
 
 /** Fields the owner sets when creating a brand-new staff login. */
@@ -71,6 +99,7 @@ interface MemberRow {
   title: string | null;
   note: string | null;
   active: boolean;
+  permissions: Record<string, boolean> | null;
 }
 
 const rowToMember = (row: MemberRow): StaffMember => ({
@@ -84,6 +113,7 @@ const rowToMember = (row: MemberRow): StaffMember => ({
   title: row.title ?? null,
   note: row.note ?? null,
   active: row.active ?? true,
+  permissions: row.permissions ?? {},
 });
 
 /** Call the owner-only `manage-staff` Edge Function. Returns an error message
@@ -101,6 +131,10 @@ interface StaffState {
   createStaff: (input: NewStaffInput) => Promise<string | null>;
   updateStaff: (memberId: string, patch: StaffPatch) => Promise<string | null>;
   setStaffPassword: (memberId: string, password: string) => Promise<string | null>;
+  setMemberPermissions: (
+    memberId: string,
+    permissions: Record<string, boolean>,
+  ) => Promise<string | null>;
   deleteStaff: (memberId: string) => Promise<string | null>;
   refresh: () => Promise<void>;
   setHasHydrated: (value: boolean) => void;
@@ -129,6 +163,7 @@ const creator = (
             title: input.title ?? null,
             note: input.note ?? null,
             active: true,
+            permissions: {},
           },
         ],
       });
@@ -156,6 +191,23 @@ const creator = (
     return manage({ action: 'password', memberId, password });
   },
 
+  setMemberPermissions: async (memberId, permissions) => {
+    if (!isSupabaseConfigured) {
+      set({
+        members: get().members.map((m) => (m.id === memberId ? { ...m, permissions } : m)),
+      });
+      return null;
+    }
+    // Owner-only by RLS (members_update) — a direct update is enough.
+    const { error } = await supabase
+      .from('store_members')
+      .update({ permissions })
+      .eq('id', memberId);
+    if (error) return i18n.t('staff.actionFailed');
+    await get().refresh();
+    return null;
+  },
+
   deleteStaff: async (memberId) => {
     if (!isSupabaseConfigured) {
       set({ members: get().members.filter((m) => m.id !== memberId) });
@@ -170,7 +222,7 @@ const creator = (
     if (!isSupabaseConfigured) return;
     const { data } = await supabase
       .from('store_members')
-      .select('id, user_id, name, email, avatar_url, role, phone, title, note, active')
+      .select('id, user_id, name, email, avatar_url, role, phone, title, note, active, permissions')
       .order('created_at');
     if (data) set({ members: (data as MemberRow[]).map(rowToMember) });
   },
@@ -189,10 +241,11 @@ export const useStaffStore = isSupabaseConfigured
       }),
     );
 
-/** Reactive permission check for the signed-in user's role. */
+/** Reactive effective-permission check for the signed-in user (role + overrides). */
 export function usePermission(permission: Permission): boolean {
   const role = useAuthStore((s) => s.user?.role ?? 'cashier');
-  return roleHasPermission(role, permission);
+  const overrides = useAuthStore((s) => s.user?.permissions);
+  return effectivePermission(role, overrides, permission);
 }
 
 // Reload the staff list whenever the active store changes (e.g. after sign-in).

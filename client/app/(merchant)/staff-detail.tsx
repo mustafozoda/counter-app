@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Clock, Pencil, ShoppingBag } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, Clock, Pencil, ShoppingBag, SlidersHorizontal } from 'lucide-react-native';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
@@ -10,6 +10,7 @@ import {
   Card,
   CurrencyText,
   IconButton,
+  PressableScale,
   Screen,
   SegmentedControl,
   Text,
@@ -124,6 +125,27 @@ function StaffDetailScreen() {
           </Text>
         </View>
       </View>
+
+      <PressableScale
+        scaleTo={0.99}
+        onPress={() =>
+          router.push({ pathname: '/staff-access', params: { id: member.id } } as unknown as Parameters<
+            typeof router.push
+          >[0])
+        }
+        accessibilityRole="button"
+        className="mt-4"
+      >
+        <Card className="flex-row items-center gap-3">
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-surface-sunken dark:bg-surface">
+            <SlidersHorizontal size={16} color={colors.inkSecondary} strokeWidth={2} />
+          </View>
+          <Text variant="body" weight="medium" className="flex-1">
+            {t('staff.manageAccess')}
+          </Text>
+          <ChevronRight size={18} color={colors.inkTertiary} strokeWidth={2} />
+        </Card>
+      </PressableScale>
 
       <View className="mt-5">
         <SegmentedControl options={rangeOptions} value={range} onChange={setRange} />

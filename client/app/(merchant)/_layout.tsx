@@ -33,6 +33,7 @@ export default function MerchantLayout() {
       <Stack.Screen name="staff-performance" />
       <Stack.Screen name="staff-activity" />
       <Stack.Screen name="staff-detail" />
+      <Stack.Screen name="staff-access" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="profile-edit" />
       <Stack.Screen name="notifications" />
