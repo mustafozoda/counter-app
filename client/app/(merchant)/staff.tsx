@@ -1,6 +1,14 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, BarChart3, History, ShieldCheck, Trash2, UserPlus } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  BarChart3,
+  History,
+  ShieldCheck,
+  SlidersHorizontal,
+  Trash2,
+  UserPlus,
+} from 'lucide-react-native';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
@@ -54,6 +62,11 @@ function StaffScreen() {
 
   const openDetail = (id: string) =>
     router.push({ pathname: '/staff-detail', params: { id } } as unknown as Parameters<
+      typeof router.push
+    >[0]);
+
+  const openAccess = (id: string) =>
+    router.push({ pathname: '/staff-access', params: { id } } as unknown as Parameters<
       typeof router.push
     >[0]);
 
@@ -129,18 +142,24 @@ function StaffScreen() {
                 .damping(18)}
             >
               <SwipeableRow
-                actions={
-                  isSelf(member)
+                actions={[
+                  {
+                    icon: SlidersHorizontal,
+                    label: t('staff.accessTitle'),
+                    tone: 'accent' as const,
+                    onPress: () => openAccess(member.id),
+                  },
+                  ...(isSelf(member)
                     ? []
                     : [
                         {
                           icon: Trash2,
                           label: t('actions.remove'),
-                          tone: 'negative',
+                          tone: 'negative' as const,
                           onPress: () => confirmRemove(member),
                         },
-                      ]
-                }
+                      ]),
+                ]}
               >
                 <Card
                   padded={false}
