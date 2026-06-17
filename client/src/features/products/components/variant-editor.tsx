@@ -123,7 +123,13 @@ interface AttributeEditorProps {
   presets: AttributePreset[];
 }
 
-function ValueInput({ onAdd, placeholder }: { onAdd: (value: string) => void; placeholder: string }) {
+function ValueInput({
+  onAdd,
+  placeholder,
+}: {
+  onAdd: (value: string) => void;
+  placeholder: string;
+}) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const [text, setText] = useState('');
@@ -271,7 +277,9 @@ function NewAttributeChip({ onAdd }: { onAdd: (name: string) => void }) {
   const [name, setName] = useState('');
 
   if (!editing) {
-    return <Chip icon={Plus} label={t('product.customAttribute')} onPress={() => setEditing(true)} />;
+    return (
+      <Chip icon={Plus} label={t('product.customAttribute')} onPress={() => setEditing(true)} />
+    );
   }
 
   const commit = () => {
@@ -357,7 +365,12 @@ function MatrixField({
 }
 
 /** One editable card per variant combination. */
-export function VariantMatrix({ rows, onChange, currencySymbol, onScanBarcode }: VariantMatrixProps) {
+export function VariantMatrix({
+  rows,
+  onChange,
+  currencySymbol,
+  onScanBarcode,
+}: VariantMatrixProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
@@ -369,7 +382,9 @@ export function VariantMatrix({ rows, onChange, currencySymbol, onScanBarcode }:
       {rows.map((row, index) => (
         <Animated.View
           key={row.signature}
-          entering={FadeInDown.delay(Math.min(index, 8) * 30).springify().damping(springs.standard.damping)}
+          entering={FadeInDown.delay(Math.min(index, 8) * 30)
+            .springify()
+            .damping(springs.standard.damping)}
           layout={LinearTransition.springify().damping(20)}
         >
           <Card elevation="none" className="gap-3 p-4">
