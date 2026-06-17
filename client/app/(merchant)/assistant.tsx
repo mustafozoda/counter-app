@@ -17,6 +17,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, PressableScale, Text, useSheetRef } from '@/components/ui';
+import { withPermission } from '@/components/require-permission';
 import { formatDayLabel } from '@/lib/format';
 import { createLocalId } from '@/lib/id';
 import { toast } from '@/stores/toast';
@@ -128,7 +129,7 @@ function DaySeparator({ label }: { label: string }) {
   );
 }
 
-export default function AssistantScreen() {
+function AssistantScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -461,3 +462,5 @@ export default function AssistantScreen() {
     </SafeAreaView>
   );
 }
+
+export default withPermission(AssistantScreen, 'use_assistant');

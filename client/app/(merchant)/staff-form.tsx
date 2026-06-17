@@ -45,6 +45,7 @@ const PERMISSION_LABEL_KEY: Record<Permission, string> = {
   sell: 'staff.permSell',
   manage_inventory: 'staff.permInventory',
   view_finance: 'staff.permFinance',
+  use_assistant: 'staff.permAssistant',
   manage_staff: 'staff.permStaff',
   manage_settings: 'staff.permSettings',
 };

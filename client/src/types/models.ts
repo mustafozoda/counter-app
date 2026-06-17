@@ -40,6 +40,8 @@ export interface User {
   email: string;
   avatarUrl: string | null;
   role: StaffRole;
+  /** Per-member permission overrides (key → granted). Absent key = role default. */
+  permissions?: Record<string, boolean>;
 }
 
 /**
@@ -60,6 +62,8 @@ export interface StaffMember {
   note: string | null;
   /** Suspended members keep their login but lose all store access. */
   active: boolean;
+  /** Per-permission overrides set by the owner. Absent key = role default. */
+  permissions: Record<string, boolean>;
 }
 
 // ---------------------------------------------------------------------------

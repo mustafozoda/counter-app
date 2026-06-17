@@ -197,12 +197,14 @@ if (isSupabaseConfigured) {
       // before we mark hydration done, so role-gated UI never flashes.
       const { data: member } = await supabase
         .from('store_members')
-        .select('role')
+        .select('role, permissions')
         .eq('user_id', session.user.id)
         .limit(1)
         .maybeSingle();
-      const role = (member as { role?: StaffRole } | null)?.role ?? 'owner';
-      useAuthStore.setState((s) => (s.user ? { user: { ...s.user, role } } : {}));
+      const m = member as { role?: StaffRole; permissions?: Record<string, boolean> } | null;
+      const role = m?.role ?? 'owner';
+      const permissions = m?.permissions ?? {};
+      useAuthStore.setState((s) => (s.user ? { user: { ...s.user, role, permissions } } : {}));
     } else {
       // No visible store: tell a brand-new user apart from a suspended one
       // (RLS hides the store + membership from suspended members).
