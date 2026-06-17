@@ -520,6 +520,9 @@ export const resources = {
         deleteSupplierBody: 'Remove "{{name}}"?',
         supplierDeleted: 'Supplier deleted',
         addProducts: 'Add products',
+        productsHeader: 'Products · {{count}}',
+        noProductsLinked:
+          'No products are linked to this supplier yet. Set a supplier on a product, or add one below.',
         noProductsYet: 'No products yet — add some in the catalog first.',
         cost: 'cost {{amount}}',
         gone: 'This supplier no longer exists.',
@@ -1555,6 +1558,9 @@ export const resources = {
         deleteSupplierBody: 'Удалить «{{name}}»?',
         supplierDeleted: 'Поставщик удалён',
         addProducts: 'Добавить товары',
+        productsHeader: 'Товары · {{count}}',
+        noProductsLinked:
+          'К этому поставщику ещё не привязаны товары. Укажите поставщика у товара или добавьте новый ниже.',
         noProductsYet: 'Товаров пока нет — сначала добавьте их в каталог.',
         cost: 'себест. {{amount}}',
         gone: 'Этот поставщик больше не существует.',
@@ -2597,6 +2603,9 @@ export const resources = {
         deleteSupplierBody: '«{{name}}»-ро нест кунам?',
         supplierDeleted: 'Таъминкунанда нест шуд',
         addProducts: 'Илова кардани мол',
+        productsHeader: 'Молҳо · {{count}}',
+        noProductsLinked:
+          'Ҳоло ба ин таъминкунанда мол пайваст нашудааст. Дар мол таъминкунанда интихоб кунед ё дар поён илова кунед.',
         noProductsYet: 'Ҳоло мол нест — аввал ба каталог илова кунед.',
         cost: 'арзиш {{amount}}',
         gone: 'Ин таъминкунанда дигар вуҷуд надорад.',

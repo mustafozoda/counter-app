@@ -21,6 +21,7 @@ import {
   Card,
   CurrencyText,
   IconButton,
+  PressableScale,
   Screen,
   Skeleton,
   Text,
@@ -193,7 +194,12 @@ export default function ProductDetailScreen() {
             {category ? <Badge label={category.name} tone="accent" /> : null}
             {product.brand ? <Badge label={product.brand} /> : null}
             {supplier ? (
-              <Badge label={t('product.fromSupplier', { name: supplier.name })} tone="neutral" />
+              <PressableScale
+                haptic="selection"
+                onPress={() => router.push({ pathname: '/supplier/[id]', params: { id: supplier.id } })}
+              >
+                <Badge label={t('product.fromSupplier', { name: supplier.name })} tone="neutral" />
+              </PressableScale>
             ) : null}
           </View>
           <Text variant="display" weight="bold">

@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, PackagePlus, Plus, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Package, PackagePlus, Plus, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
@@ -24,7 +24,7 @@ import { withPermission } from '@/components/require-permission';
 import { purchaseOrderTotal } from '@/api/suppliers';
 import { ProductImage } from '@/features/products/components/product-image';
 import { useProducts, useSaveProduct } from '@/features/products/hooks';
-import { generateSku, variantLabel } from '@/features/products/stock';
+import { generateSku, productStockStatus, totalStock, variantLabel } from '@/features/products/stock';
 import {
   useCreatePurchaseOrder,
   useDeleteSupplier,
@@ -69,6 +69,10 @@ function SupplierDetailScreen() {
 
   const supplier = supplierQuery.data;
   const products = productsQuery.data ?? [];
+  const supplierProducts = useMemo(
+    () => products.filter((p) => p.supplierId === id),
+    [products, id],
+  );
   const draftLines = useMemo(() => Object.values(draft).filter((l) => l.qty > 0), [draft]);
   const total = purchaseOrderTotal(
     draftLines.map((l) => ({ variantId: l.variantId, qty: l.qty, unitCost: l.unitCost })),
@@ -218,6 +222,54 @@ function SupplierDetailScreen() {
               {supplier.notes}
             </Text>
           ) : null}
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(60).springify().damping(18)} className="mt-6">
+          <Text variant="h2" weight="semibold">
+            {t('suppliers.productsHeader', { count: supplierProducts.length })}
+          </Text>
+          {supplierProducts.length === 0 ? (
+            <Card className="mt-3 items-center gap-2 py-6">
+              <Package size={24} color={colors.inkTertiary} strokeWidth={1.75} />
+              <Text variant="caption" tone="tertiary" className="text-center">
+                {t('suppliers.noProductsLinked')}
+              </Text>
+            </Card>
+          ) : (
+            <Card padded={false} className="mt-3">
+              {supplierProducts.map((product, index) => {
+                const units = totalStock(product.variants);
+                const status = productStockStatus(product.variants);
+                return (
+                  <PressableScale
+                    key={product.id}
+                    scaleTo={0.99}
+                    haptic="selection"
+                    onPress={() => router.push({ pathname: '/product/[id]', params: { id: product.id } })}
+                    accessibilityRole="button"
+                    className={`flex-row items-center gap-3 px-4 py-3 ${
+                      index < supplierProducts.length - 1 ? 'border-b border-hairline' : ''
+                    }`}
+                  >
+                    <ProductImage product={product} size={40} radius={10} />
+                    <View className="flex-1">
+                      <Text variant="body" weight="medium" numberOfLines={1}>
+                        {product.name}
+                      </Text>
+                      <Text variant="caption" tone="tertiary">
+                        {t('suppliers.cost', { amount: formatMoney(product.cost, currency) })}
+                      </Text>
+                    </View>
+                    <Badge
+                      label={String(units)}
+                      tone={status === 'in-stock' ? 'positive' : status === 'low' ? 'caution' : 'negative'}
+                      dot
+                    />
+                  </PressableScale>
+                );
+              })}
+            </Card>
+          )}
         </Animated.View>
 
         <View className="mt-6 flex-row items-center justify-between">
