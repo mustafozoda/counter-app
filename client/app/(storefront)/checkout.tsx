@@ -60,6 +60,7 @@ export default function StorefrontCheckout() {
       variantLabel: l.variantLabel,
       sku: '',
       unitPrice: l.unitPrice,
+      cost: 0,
       taxRate: store?.taxRate ?? 0,
       qty: l.qty,
       available: l.available,

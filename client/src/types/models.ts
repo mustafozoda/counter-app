@@ -148,6 +148,8 @@ export interface OrderItem {
   qty: number;
   unitPrice: number;
   lineTotal: number;
+  /** Unit cost snapshot at sale time — drives COGS / profit, immune to later edits. */
+  cost: number;
 }
 
 export interface Order {

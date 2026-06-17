@@ -21,7 +21,7 @@ const order = (overrides: Partial<Order>): Order => ({
   channel: 'pos',
   customerId: null,
   items: [
-    { id: 'i1', variantId: 'v1', productName: 'Hoodie', variantLabel: '2–4y', qty: 2, unitPrice: 24, lineTotal: 48 },
+    { id: 'i1', variantId: 'v1', productName: 'Hoodie', variantLabel: '2–4y', qty: 2, unitPrice: 24, lineTotal: 48, cost: 0 },
   ],
   subtotal: 48,
   discount: 0,
@@ -86,7 +86,7 @@ describe('summarize', () => {
         order({}),
         order({
           items: [
-            { id: 'i2', variantId: 'v2', productName: 'Beanie', variantLabel: 'Default', qty: 5, unitPrice: 9, lineTotal: 45 },
+            { id: 'i2', variantId: 'v2', productName: 'Beanie', variantLabel: 'Default', qty: 5, unitPrice: 9, lineTotal: 45, cost: 0 },
           ],
         }),
         order({ createdAt: '2026-01-01T00:00:00.000Z' }),

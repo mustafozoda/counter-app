@@ -9,8 +9,8 @@ const order: Order = {
   channel: 'pos',
   customerId: null,
   items: [
-    { id: 'i1', variantId: 'v1', productName: 'Hoodie', variantLabel: '2–4y', qty: 2, unitPrice: 24, lineTotal: 48 },
-    { id: 'i2', variantId: 'v2', productName: 'Beanie', variantLabel: 'Default', qty: 1, unitPrice: 9.5, lineTotal: 9.5 },
+    { id: 'i1', variantId: 'v1', productName: 'Hoodie', variantLabel: '2–4y', qty: 2, unitPrice: 24, lineTotal: 48, cost: 0 },
+    { id: 'i2', variantId: 'v2', productName: 'Beanie', variantLabel: 'Default', qty: 1, unitPrice: 9.5, lineTotal: 9.5, cost: 0 },
   ],
   subtotal: 57.5,
   discount: 5.75, // 10% off

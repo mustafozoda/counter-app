@@ -133,6 +133,7 @@ export class LocalOrdersApi implements OrdersApi {
         qty: line.qty,
         unitPrice: line.unitPrice,
         lineTotal: Math.round(line.unitPrice * line.qty * 100) / 100,
+        cost: line.cost,
       })),
       subtotal: input.totals.subtotal,
       discount: input.totals.discount,
@@ -290,6 +291,7 @@ interface OrderItemRow {
   qty: number;
   unit_price: number;
   line_total: number;
+  cost: number | null;
 }
 
 interface PaymentRow {
@@ -348,6 +350,7 @@ const toOrderItem = (row: OrderItemRow): OrderItem => ({
   qty: row.qty,
   unitPrice: Number(row.unit_price),
   lineTotal: Number(row.line_total),
+  cost: Number(row.cost ?? 0),
 });
 
 const toPayment = (row: PaymentRow): Payment => ({
@@ -415,6 +418,7 @@ export class SupabaseOrdersApi implements OrdersApi {
         variantLabel: l.variantLabel,
         qty: l.qty,
         unitPrice: l.unitPrice,
+        cost: l.cost,
       })),
       p_payments: input.payments.map((p) => ({
         method: p.method,

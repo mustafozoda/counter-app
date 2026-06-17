@@ -63,7 +63,7 @@ const order = (): OrderWithPayments => ({
   number: '#1001',
   channel: 'pos',
   customerId: null,
-  items: [{ id: 'i1', variantId: 'v1', productName: 'Hoodie', variantLabel: 'Default', qty: 1, unitPrice: 20, lineTotal: 20 }],
+  items: [{ id: 'i1', variantId: 'v1', productName: 'Hoodie', variantLabel: 'Default', qty: 1, unitPrice: 20, lineTotal: 20, cost: 0 }],
   subtotal: 20,
   discount: 0,
   tax: 0,
