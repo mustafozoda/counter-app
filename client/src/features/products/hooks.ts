@@ -148,6 +148,7 @@ export function useImportFirstProductDraft() {
           description: '',
           brand: null,
           categoryId: null,
+          supplierId: null,
           images: [],
           cost: 0,
           basePrice: draft.price,

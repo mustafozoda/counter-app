@@ -33,6 +33,7 @@ export interface ProductInput {
   description: string;
   brand: string | null;
   categoryId: Id | null;
+  supplierId: Id | null;
   images: string[];
   cost: number;
   basePrice: number;
@@ -147,6 +148,7 @@ export class LocalProductsApi implements ProductsApi {
       description: input.description,
       brand: input.brand,
       categoryId: input.categoryId,
+      supplierId: input.supplierId,
       images: input.images,
       cost: input.cost,
       basePrice: input.basePrice,
@@ -170,6 +172,7 @@ export class LocalProductsApi implements ProductsApi {
       description: input.description,
       brand: input.brand,
       categoryId: input.categoryId,
+      supplierId: input.supplierId,
       images: input.images,
       cost: input.cost,
       basePrice: input.basePrice,
@@ -339,7 +342,7 @@ export class LocalProductsApi implements ProductsApi {
     const doc = await this.load();
     const samples = sampleCatalogFor(vertical, doc.categories);
     for (const sample of samples) {
-      const product: Product = { ...sample.product, id: createLocalId() };
+      const product: Product = { ...sample.product, id: createLocalId(), supplierId: null };
       doc.products.push(product);
       for (const v of sample.variants) this.insertVariant(doc, product.id, v);
     }
@@ -369,6 +372,7 @@ interface ProductRow {
   description: string;
   brand: string | null;
   category_id: string | null;
+  supplier_id: string | null;
   images: string[] | null;
   cost: number;
   base_price: number;
@@ -411,6 +415,7 @@ const toProduct = (row: ProductRow): ProductWithVariants => ({
   description: row.description ?? '',
   brand: row.brand,
   categoryId: row.category_id,
+  supplierId: row.supplier_id,
   images: row.images ?? [],
   cost: Number(row.cost),
   basePrice: Number(row.base_price),
@@ -465,6 +470,7 @@ export class SupabaseProductsApi implements ProductsApi {
         description: input.description,
         brand: input.brand,
         category_id: input.categoryId,
+        supplier_id: input.supplierId,
         images,
         cost: input.cost,
         base_price: input.basePrice,
@@ -520,6 +526,7 @@ export class SupabaseProductsApi implements ProductsApi {
         description: input.description,
         brand: input.brand,
         category_id: input.categoryId,
+        supplier_id: input.supplierId,
         images,
         cost: input.cost,
         base_price: input.basePrice,
@@ -685,6 +692,7 @@ export class SupabaseProductsApi implements ProductsApi {
         description: sample.product.description,
         brand: sample.product.brand,
         categoryId: sample.product.categoryId,
+        supplierId: null,
         images: sample.product.images,
         cost: sample.product.cost,
         basePrice: sample.product.basePrice,

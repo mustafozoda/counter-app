@@ -85,6 +85,8 @@ export interface Product {
   description: string;
   brand: string | null;
   categoryId: Id | null;
+  /** Who we buy this from (nullable). */
+  supplierId: Id | null;
   images: string[];
   /** Unit cost to the store, in store currency. */
   cost: number;
