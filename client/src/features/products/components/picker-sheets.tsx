@@ -1,11 +1,11 @@
-import { Check, FolderOpen } from 'lucide-react-native';
+import { Check, FolderOpen, Truck } from 'lucide-react-native';
 import { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { PressableScale, Sheet, Text, type SheetRef } from '@/components/ui';
 import { useTheme } from '@/theme';
-import type { Category, Id } from '@/types/models';
+import type { Category, Id, Supplier } from '@/types/models';
 
 import { SORT_OPTIONS, type ProductSort } from '../filtering';
 
@@ -95,6 +95,49 @@ export const CategoryPickerSheet = forwardRef<SheetRef, CategorySheetProps>(
                 />
               ))}
             </View>
+          ))}
+        </View>
+      </Sheet>
+    );
+  },
+);
+
+export interface SupplierSheetProps {
+  suppliers: Supplier[];
+  selected: Id | null;
+  onSelect: (id: Id | null) => void;
+  nullLabel: string;
+  dismiss: () => void;
+}
+
+/** Supplier picker for the product form. */
+export const SupplierPickerSheet = forwardRef<SheetRef, SupplierSheetProps>(
+  function SupplierPickerSheet({ suppliers, selected, onSelect, nullLabel, dismiss }, ref) {
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const choose = (id: Id | null) => {
+      onSelect(id);
+      dismiss();
+    };
+    return (
+      <Sheet ref={ref} title={t('product.supplier')}>
+        <View className="gap-0.5">
+          <SheetOptionRow label={nullLabel} selected={selected === null} onPress={() => choose(null)} />
+          {suppliers.length === 0 ? (
+            <View className="items-center gap-2 py-8">
+              <Truck size={28} color={colors.inkTertiary} strokeWidth={1.75} />
+              <Text variant="caption" tone="tertiary">
+                {t('product.noSuppliersYet')}
+              </Text>
+            </View>
+          ) : null}
+          {suppliers.map((s) => (
+            <SheetOptionRow
+              key={s.id}
+              label={s.name}
+              selected={selected === s.id}
+              onPress={() => choose(s.id)}
+            />
           ))}
         </View>
       </Sheet>

@@ -22,7 +22,7 @@ import {
 import { withPermission } from '@/components/require-permission';
 import type { ProductInput } from '@/api/products';
 import { attributePresetsFor } from '@/features/products/attribute-presets';
-import { CategoryPickerSheet } from '@/features/products/components/picker-sheets';
+import { CategoryPickerSheet, SupplierPickerSheet } from '@/features/products/components/picker-sheets';
 import {
   AttributeEditor,
   buildRows,
@@ -34,6 +34,7 @@ import {
   type VariantRow,
 } from '@/features/products/components/variant-editor';
 import { useCategories, useProduct, useSaveProduct } from '@/features/products/hooks';
+import { useSuppliers } from '@/features/suppliers/hooks';
 import { generateSku, marginRatio } from '@/features/products/stock';
 import { getCurrencySpec, formatPercentDelta } from '@/lib/format';
 import { useScannerStore } from '@/stores/scanner';
@@ -89,6 +90,7 @@ function ProductFormScreen() {
   const productQuery = useProduct(editingId ?? '');
   const existing = editingId ? productQuery.data : null;
   const categories = useCategories().data ?? [];
+  const suppliers = useSuppliers().data ?? [];
   const save = useSaveProduct();
   const setScanRequest = useScannerStore((s) => s.setRequest);
 
@@ -121,6 +123,7 @@ function ProductFormScreen() {
 
   const [images, setImages] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [supplierId, setSupplierId] = useState<string | null>(null);
   const [isDraft, setIsDraft] = useState(false);
   const [hasVariants, setHasVariants] = useState(false);
   const [attributes, setAttributes] = useState<AttributeDef[]>([]);
@@ -131,6 +134,7 @@ function ProductFormScreen() {
   const hydrated = useRef(false);
 
   const categorySheet = useSheetRef();
+  const supplierSheet = useSheetRef();
   const watchedName = watch('name');
   const watchedPrice = watch('price');
   const watchedCost = watch('cost');
@@ -149,6 +153,7 @@ function ProductFormScreen() {
     });
     setImages(existing.images);
     setCategoryId(existing.categoryId);
+    setSupplierId(existing.supplierId);
     setIsDraft(existing.status === 'draft');
     const derived = rowsFromVariants(existing.variants);
     const variantful = derived.attributes.length > 0;
@@ -218,6 +223,7 @@ function ProductFormScreen() {
       description: values.description.trim(),
       brand: values.brand.trim() || null,
       categoryId,
+      supplierId,
       images,
       cost: costRaw === '' ? 0 : numeric(costRaw),
       basePrice: numeric(values.price),
@@ -254,6 +260,7 @@ function ProductFormScreen() {
 
   const margin = marginRatio(numeric(watchedCost || '0') || 0, numeric(watchedPrice || '0') || 0);
   const selectedCategory = categories.find((c) => c.id === categoryId);
+  const selectedSupplier = suppliers.find((s) => s.id === supplierId);
 
   if (editingId && productQuery.isLoading) {
     return (
@@ -335,6 +342,26 @@ function ProductFormScreen() {
               </Text>
               <Text variant="body" weight={selectedCategory ? 'medium' : 'regular'} tone={selectedCategory ? 'primary' : 'tertiary'}>
                 {selectedCategory?.name ?? t('product.noCategory')}
+              </Text>
+            </View>
+            <ChevronDown size={20} color={colors.inkTertiary} strokeWidth={2} />
+          </PressableScale>
+          <PressableScale
+            scaleTo={0.98}
+            onPress={() => supplierSheet.current?.present()}
+            accessibilityRole="button"
+            className="h-14 flex-row items-center justify-between rounded-md border border-hairline bg-surface px-4 dark:bg-surface-elevated"
+          >
+            <View>
+              <Text variant="micro" weight="medium" tone="tertiary">
+                {t('product.supplier')}
+              </Text>
+              <Text
+                variant="body"
+                weight={selectedSupplier ? 'medium' : 'regular'}
+                tone={selectedSupplier ? 'primary' : 'tertiary'}
+              >
+                {selectedSupplier?.name ?? t('product.noSupplier')}
               </Text>
             </View>
             <ChevronDown size={20} color={colors.inkTertiary} strokeWidth={2} />
@@ -449,6 +476,14 @@ function ProductFormScreen() {
         nullLabel={t('product.noCategory')}
         onSelect={setCategoryId}
         dismiss={() => categorySheet.current?.dismiss()}
+      />
+      <SupplierPickerSheet
+        ref={supplierSheet}
+        suppliers={suppliers}
+        selected={supplierId}
+        nullLabel={t('product.noSupplier')}
+        onSelect={setSupplierId}
+        dismiss={() => supplierSheet.current?.dismiss()}
       />
     </Screen>
   );

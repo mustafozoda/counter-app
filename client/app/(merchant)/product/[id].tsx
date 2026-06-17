@@ -35,6 +35,7 @@ import {
   useProduct,
   useSetProductStatus,
 } from '@/features/products/hooks';
+import { useSuppliers } from '@/features/suppliers/hooks';
 import {
   marginRatio,
   totalStock,
@@ -68,6 +69,7 @@ export default function ProductDetailScreen() {
   const productQuery = useProduct(id);
   const movementsQuery = useMovements(id);
   const categoriesQuery = useCategories();
+  const suppliersQuery = useSuppliers();
   const setStatus = useSetProductStatus();
   const deleteProduct = useDeleteProduct();
 
@@ -100,6 +102,7 @@ export default function ProductDetailScreen() {
   }
 
   const category = categoriesQuery.data?.find((c) => c.id === product.categoryId);
+  const supplier = suppliersQuery.data?.find((s) => s.id === product.supplierId);
   const units = totalStock(product.variants);
   const stockValue = product.variants.reduce((sum, v) => sum + v.stockQty * product.cost, 0);
   const margin = marginRatio(product.cost, product.basePrice);
@@ -189,6 +192,9 @@ export default function ProductDetailScreen() {
             {product.status === 'draft' ? <Badge label={t('product.draft')} tone="info" /> : null}
             {category ? <Badge label={category.name} tone="accent" /> : null}
             {product.brand ? <Badge label={product.brand} /> : null}
+            {supplier ? (
+              <Badge label={t('product.fromSupplier', { name: supplier.name })} tone="neutral" />
+            ) : null}
           </View>
           <Text variant="display" weight="bold">
             {product.name}

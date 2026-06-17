@@ -23,6 +23,7 @@ const product = (variants: ProductVariant[], overrides: Partial<ProductWithVaria
   id: 'p1',
   name: 'Hoodie',
   description: '',
+  supplierId: null,
   brand: null,
   categoryId: null,
   images: [],

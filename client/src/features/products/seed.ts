@@ -23,7 +23,7 @@ export function defaultCategoriesFor(vertical: string): string[] {
 }
 
 export interface SampleProduct {
-  product: Omit<Product, 'id'>;
+  product: Omit<Product, 'id' | 'supplierId'>;
   variants: VariantInput[];
 }
 

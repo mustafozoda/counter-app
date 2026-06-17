@@ -33,6 +33,7 @@ const product = (
   description: '',
   brand: 'Tiny Trek',
   categoryId: 'c1',
+  supplierId: null,
   images: [],
   cost: 9.5,
   basePrice: 24,
