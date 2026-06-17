@@ -257,12 +257,14 @@ export interface Supplier {
   notes: string;
 }
 
-export type PurchaseOrderStatus = 'draft' | 'ordered' | 'received' | 'cancelled';
+export type PurchaseOrderStatus = 'draft' | 'ordered' | 'partial' | 'received' | 'cancelled';
 
 export interface PurchaseOrderItem {
   variantId: Id;
   qty: number;
   unitCost: number;
+  /** Cumulative quantity received so far (for partial deliveries). */
+  receivedQty?: number;
 }
 
 export interface PurchaseOrder {

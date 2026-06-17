@@ -31,12 +31,22 @@ function LowStockScreen() {
   const { t } = useTranslation();
   const productsQuery = useProducts();
   const adjustSheet = useSheetRef();
-  const [target, setTarget] = useState<{ variant: ProductVariant; productId: string } | null>(null);
+  const [target, setTarget] = useState<{
+    variant: ProductVariant;
+    productId: string;
+    cost: number;
+    supplierId: string | null;
+  } | null>(null);
 
   const attention = useMemo(() => lowStockProducts(productsQuery.data ?? []), [productsQuery.data]);
 
-  const openRestock = (variant: ProductVariant, productId: string) => {
-    setTarget({ variant, productId });
+  const openRestock = (
+    variant: ProductVariant,
+    productId: string,
+    cost: number,
+    supplierId: string | null,
+  ) => {
+    setTarget({ variant, productId, cost, supplierId });
     adjustSheet.current?.present();
   };
 
@@ -128,7 +138,7 @@ function LowStockScreen() {
                           size="sm"
                           variant="secondary"
                           icon={RotateCcw}
-                          onPress={() => openRestock(variant, product.id)}
+                          onPress={() => openRestock(variant, product.id, product.cost, product.supplierId)}
                         />
                       </View>
                     );
@@ -144,6 +154,8 @@ function LowStockScreen() {
         ref={adjustSheet}
         variant={target?.variant ?? null}
         productId={target?.productId ?? ''}
+        defaultCost={target?.cost}
+        supplierId={target?.supplierId}
         dismiss={() => adjustSheet.current?.dismiss()}
       />
     </Screen>

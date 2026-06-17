@@ -26,15 +26,25 @@ export interface PurchaseOrderInput {
   items: PurchaseOrderItem[];
 }
 
+/** A line being received right now, with its confirmed unit cost. */
+export interface PurchaseOrderReceipt {
+  variantId: Id;
+  qty: number;
+  unitCost: number;
+}
+
 export interface SuppliersApi {
   listSuppliers(): Promise<Supplier[]>;
   getSupplier(id: Id): Promise<Supplier | null>;
   saveSupplier(input: SupplierInput): Promise<Supplier>;
   deleteSupplier(id: Id): Promise<void>;
   listPurchaseOrders(): Promise<PurchaseOrder[]>;
+  getPurchaseOrder(id: Id): Promise<PurchaseOrder | null>;
   createPurchaseOrder(input: PurchaseOrderInput): Promise<PurchaseOrder>;
-  /** Receives stock (increments inventory + logs an inventory expense). */
+  /** Receives the whole order at the ordered quantities. */
   receivePurchaseOrder(id: Id): Promise<void>;
+  /** Receives specific quantities (partial deliveries); short lines stay open. */
+  receivePurchaseOrderItems(id: Id, receipts: PurchaseOrderReceipt[]): Promise<void>;
   cancelPurchaseOrder(id: Id): Promise<void>;
 }
 
@@ -113,6 +123,11 @@ export class LocalSuppliersApi implements SuppliersApi {
     return [...doc.purchaseOrders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
+  async getPurchaseOrder(id: Id): Promise<PurchaseOrder | null> {
+    const doc = await this.load();
+    return doc.purchaseOrders.find((p) => p.id === id) ?? null;
+  }
+
   async createPurchaseOrder(input: PurchaseOrderInput): Promise<PurchaseOrder> {
     const doc = await this.load();
     const po: PurchaseOrder = {
@@ -151,6 +166,39 @@ export class LocalSuppliersApi implements SuppliersApi {
         linkedOrderId: null,
       });
     }
+  }
+
+  async receivePurchaseOrderItems(id: Id, receipts: PurchaseOrderReceipt[]): Promise<void> {
+    const doc = await this.load();
+    const po = doc.purchaseOrders.find((p) => p.id === id);
+    if (!po || po.status === 'received' || po.status === 'cancelled') return;
+
+    const applied = receipts.filter((r) => r.qty > 0);
+    // Each line flows through receiveStock so stock, last-cost, supplier and the
+    // inventory expense are all captured the same way as a manual restock.
+    for (const r of applied) {
+      await productsApi.receiveStock({
+        variantId: r.variantId,
+        qty: r.qty,
+        unitCost: r.unitCost,
+        supplierId: po.supplierId,
+        reason: 'Purchase order received',
+      });
+    }
+
+    po.items = po.items.map((item) => {
+      const r = applied.find((x) => x.variantId === item.variantId);
+      return {
+        ...item,
+        receivedQty: (item.receivedQty ?? 0) + (r?.qty ?? 0),
+        unitCost: r ? r.unitCost : item.unitCost,
+      };
+    });
+    const totalRecv = po.items.reduce((s, i) => s + (i.receivedQty ?? 0), 0);
+    const totalOrder = po.items.reduce((s, i) => s + i.qty, 0);
+    po.status = totalRecv >= totalOrder ? 'received' : totalRecv > 0 ? 'partial' : po.status;
+    po.totalCost = purchaseOrderTotal(po.items);
+    await this.save();
   }
 
   async cancelPurchaseOrder(id: Id): Promise<void> {
@@ -253,6 +301,16 @@ export class SupabaseSuppliersApi implements SuppliersApi {
     return (data as PurchaseOrderRow[]).map(toPurchaseOrder);
   }
 
+  async getPurchaseOrder(id: Id): Promise<PurchaseOrder | null> {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? toPurchaseOrder(data as PurchaseOrderRow) : null;
+  }
+
   async createPurchaseOrder(input: PurchaseOrderInput): Promise<PurchaseOrder> {
     const { data, error } = await supabase
       .from('purchase_orders')
@@ -271,6 +329,14 @@ export class SupabaseSuppliersApi implements SuppliersApi {
 
   async receivePurchaseOrder(id: Id): Promise<void> {
     const { error } = await supabase.rpc('receive_purchase_order', { p_id: id });
+    if (error) throw error;
+  }
+
+  async receivePurchaseOrderItems(id: Id, receipts: PurchaseOrderReceipt[]): Promise<void> {
+    const { error } = await supabase.rpc('receive_purchase_order_items', {
+      p_id: id,
+      p_receipts: receipts,
+    });
     if (error) throw error;
   }
 

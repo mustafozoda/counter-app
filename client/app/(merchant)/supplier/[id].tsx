@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, PackagePlus, Plus, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Package, PackagePlus, Plus, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, View } from 'react-native';
@@ -23,8 +23,8 @@ import {
 import { withPermission } from '@/components/require-permission';
 import { purchaseOrderTotal } from '@/api/suppliers';
 import { ProductImage } from '@/features/products/components/product-image';
-import { useProducts } from '@/features/products/hooks';
-import { variantLabel } from '@/features/products/stock';
+import { useProducts, useSaveProduct } from '@/features/products/hooks';
+import { generateSku, productStockStatus, totalStock, variantLabel } from '@/features/products/stock';
 import {
   useCreatePurchaseOrder,
   useDeleteSupplier,
@@ -58,12 +58,21 @@ function SupplierDetailScreen() {
   const productsQuery = useProducts();
   const createPo = useCreatePurchaseOrder();
   const deleteSupplier = useDeleteSupplier();
+  const saveProduct = useSaveProduct();
 
   const pickerSheet = useSheetRef();
   const [draft, setDraft] = useState<Record<string, DraftLine>>({});
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newCost, setNewCost] = useState('');
+  const [newPrice, setNewPrice] = useState('');
 
   const supplier = supplierQuery.data;
   const products = productsQuery.data ?? [];
+  const supplierProducts = useMemo(
+    () => products.filter((p) => p.supplierId === id),
+    [products, id],
+  );
   const draftLines = useMemo(() => Object.values(draft).filter((l) => l.qty > 0), [draft]);
   const total = purchaseOrderTotal(
     draftLines.map((l) => ({ variantId: l.variantId, qty: l.qty, unitCost: l.unitCost })),
@@ -92,6 +101,66 @@ function SupplierDetailScreen() {
 
   const setLine = (variantId: string, patch: Partial<DraftLine>, base: DraftLine) =>
     setDraft((prev) => ({ ...prev, [variantId]: { ...base, ...prev[variantId], ...patch } }));
+
+  // Create a slim product on the fly and drop it straight into the draft order,
+  // already linked to this supplier so receiving fills in nothing extra.
+  const createItem = async () => {
+    const name = newName.trim();
+    if (name.length < 2) {
+      toast.error(t('po.itemNameNeeded'), t('po.itemNameNeededBody'));
+      return;
+    }
+    const parsedCost = Number.parseFloat(newCost.replace(',', '.'));
+    const parsedPrice = Number.parseFloat(newPrice.replace(',', '.'));
+    const cost = Number.isFinite(parsedCost) && parsedCost > 0 ? parsedCost : 0;
+    try {
+      const product = await saveProduct.mutateAsync({
+        input: {
+          name,
+          description: '',
+          brand: null,
+          categoryId: null,
+          supplierId: supplier.id,
+          images: [],
+          cost,
+          basePrice: Number.isFinite(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0,
+          taxRate: null,
+          status: 'active',
+          variants: [
+            {
+              attributes: {},
+              sku: generateSku(name, []),
+              barcode: null,
+              stockQty: 0,
+              priceOverride: null,
+              lowStockThreshold: 5,
+            },
+          ],
+        },
+      });
+      const variant = product.variants[0];
+      if (variant) {
+        setLine(
+          variant.id,
+          { qty: 1 },
+          {
+            variantId: variant.id,
+            productName: product.name,
+            variantLabel: variantLabel(variant),
+            qty: 0,
+            unitCost: product.cost,
+          },
+        );
+      }
+      toast.success(t('po.itemCreated'), product.name);
+      setNewName('');
+      setNewCost('');
+      setNewPrice('');
+      setCreating(false);
+    } catch {
+      toast.error(t('po.itemCreateFailed'));
+    }
+  };
 
   const submitPo = () => {
     if (draftLines.length === 0) {
@@ -153,6 +222,54 @@ function SupplierDetailScreen() {
               {supplier.notes}
             </Text>
           ) : null}
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(60).springify().damping(18)} className="mt-6">
+          <Text variant="h2" weight="semibold">
+            {t('suppliers.productsHeader', { count: supplierProducts.length })}
+          </Text>
+          {supplierProducts.length === 0 ? (
+            <Card className="mt-3 items-center gap-2 py-6">
+              <Package size={24} color={colors.inkTertiary} strokeWidth={1.75} />
+              <Text variant="caption" tone="tertiary" className="text-center">
+                {t('suppliers.noProductsLinked')}
+              </Text>
+            </Card>
+          ) : (
+            <Card padded={false} className="mt-3">
+              {supplierProducts.map((product, index) => {
+                const units = totalStock(product.variants);
+                const status = productStockStatus(product.variants);
+                return (
+                  <PressableScale
+                    key={product.id}
+                    scaleTo={0.99}
+                    haptic="selection"
+                    onPress={() => router.push({ pathname: '/product/[id]', params: { id: product.id } })}
+                    accessibilityRole="button"
+                    className={`flex-row items-center gap-3 px-4 py-3 ${
+                      index < supplierProducts.length - 1 ? 'border-b border-hairline' : ''
+                    }`}
+                  >
+                    <ProductImage product={product} size={40} radius={10} />
+                    <View className="flex-1">
+                      <Text variant="body" weight="medium" numberOfLines={1}>
+                        {product.name}
+                      </Text>
+                      <Text variant="caption" tone="tertiary">
+                        {t('suppliers.cost', { amount: formatMoney(product.cost, currency) })}
+                      </Text>
+                    </View>
+                    <Badge
+                      label={String(units)}
+                      tone={status === 'in-stock' ? 'positive' : status === 'low' ? 'caution' : 'negative'}
+                      dot
+                    />
+                  </PressableScale>
+                );
+              })}
+            </Card>
+          )}
         </Animated.View>
 
         <View className="mt-6 flex-row items-center justify-between">
@@ -217,14 +334,81 @@ function SupplierDetailScreen() {
         </Animated.View>
       ) : null}
 
-      <Sheet ref={pickerSheet} title={t('suppliers.addProducts')} snapPoints={['70%']}>
-        <ScrollView contentContainerClassName="gap-2 pb-6" showsVerticalScrollIndicator={false}>
-          {products.length === 0 ? (
-            <Text variant="body" tone="tertiary" className="py-6 text-center">
-              {t('suppliers.noProductsYet')}
-            </Text>
-          ) : (
-            products.flatMap((product) =>
+      <Sheet
+        ref={pickerSheet}
+        title={creating ? t('po.newItem') : t('suppliers.addProducts')}
+        snapPoints={['70%']}
+        onDismiss={() => setCreating(false)}
+      >
+        {creating ? (
+          <View className="gap-4">
+            <TextField label={t('po.itemName')} value={newName} onChangeText={setNewName} autoFocus />
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <TextField
+                  label={t('stock.unitCost')}
+                  prefix={symbol}
+                  value={newCost}
+                  onChangeText={setNewCost}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View className="flex-1">
+                <TextField
+                  label={t('po.salePrice')}
+                  prefix={symbol}
+                  value={newPrice}
+                  onChangeText={setNewPrice}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Button
+                  label={t('common.cancel')}
+                  variant="secondary"
+                  fullWidth
+                  onPress={() => setCreating(false)}
+                />
+              </View>
+              <View className="flex-1">
+                <Button
+                  label={t('po.createAndAdd')}
+                  fullWidth
+                  loading={saveProduct.isPending}
+                  onPress={createItem}
+                />
+              </View>
+            </View>
+          </View>
+        ) : (
+          <ScrollView contentContainerClassName="gap-2 pb-6" showsVerticalScrollIndicator={false}>
+            <PressableScale
+              scaleTo={0.98}
+              haptic="selection"
+              onPress={() => setCreating(true)}
+              accessibilityRole="button"
+              className="mb-1 flex-row items-center gap-3 rounded-md border border-dashed border-hairline px-3 py-3"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-tint">
+                <Plus size={18} color={colors.primary} strokeWidth={2} />
+              </View>
+              <View className="flex-1">
+                <Text variant="body" weight="semibold">
+                  {t('po.newItem')}
+                </Text>
+                <Text variant="caption" tone="tertiary">
+                  {t('po.newItemHint')}
+                </Text>
+              </View>
+            </PressableScale>
+            {products.length === 0 ? (
+              <Text variant="body" tone="tertiary" className="py-6 text-center">
+                {t('suppliers.noProductsYet')}
+              </Text>
+            ) : (
+              products.flatMap((product) =>
               product.variants.map((variant) => {
                 const inDraft = (draft[variant.id]?.qty ?? 0) > 0;
                 const base: DraftLine = {
@@ -260,7 +444,8 @@ function SupplierDetailScreen() {
               }),
             )
           )}
-        </ScrollView>
+          </ScrollView>
+        )}
       </Sheet>
     </Screen>
   );
