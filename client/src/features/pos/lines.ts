@@ -16,6 +16,7 @@ export function makeCartLine(
     variantLabel: variantLabel(variant),
     sku: variant.sku,
     unitPrice: variantPrice(product, variant),
+    cost: product.cost,
     taxRate: product.taxRate ?? store.taxRate,
     available: variant.stockQty,
     imageUri: product.images[0] ?? null,

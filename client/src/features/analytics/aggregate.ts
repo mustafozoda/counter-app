@@ -6,6 +6,10 @@ export interface ProductPerformance {
   name: string;
   units: number;
   revenue: number;
+  /** COGS for this product = Σ(line cost × qty). */
+  cost: number;
+  /** revenue − cost. */
+  profit: number;
 }
 
 export interface DayBucket {
@@ -20,10 +24,18 @@ export interface HourActivity {
 
 export interface AnalyticsReport {
   totalRevenue: number;
+  /** Cost of goods sold = Σ(line cost × qty) over non-refunded orders. */
+  totalCost: number;
+  /** revenue − COGS. Inventory-purchase expenses are NOT subtracted here. */
+  grossProfit: number;
+  /** grossProfit / revenue (a fraction; 0 when there is no revenue). */
+  margin: number;
   totalOrders: number;
   averageOrderValue: number;
   bestSellers: ProductPerformance[];
   slowMovers: ProductPerformance[];
+  mostProfitable: ProductPerformance[];
+  leastProfitable: ProductPerformance[];
   revenueByDay: DayBucket[];
   peakHours: HourActivity[];
   /** Busiest hour of day, or null when there are no orders. */
@@ -53,9 +65,11 @@ export function analyze(orders: Order[], days = 30, now: Date = new Date()): Ana
         item.variantLabel !== 'Default'
           ? `${item.productName} · ${item.variantLabel}`
           : item.productName;
-      const entry = perf.get(key) ?? { name: key, units: 0, revenue: 0 };
+      const entry = perf.get(key) ?? { name: key, units: 0, revenue: 0, cost: 0, profit: 0 };
       entry.units += item.qty;
       entry.revenue = round2(entry.revenue + item.lineTotal);
+      entry.cost = round2(entry.cost + item.cost * item.qty);
+      entry.profit = round2(entry.revenue - entry.cost);
       perf.set(key, entry);
     }
   }
@@ -83,12 +97,27 @@ export function analyze(orders: Order[], days = 30, now: Date = new Date()): Ana
   const peakHour =
     totalOrders > 0 ? peakHours.reduce((best, h) => (h.orders > best.orders ? h : best)).hour : null;
 
+  // Profit: revenue − COGS from the per-line cost snapshot. Inventory-purchase
+  // expenses are deliberately NOT subtracted here (they're cash-flow only).
+  const totalCost = round2(
+    live.reduce((sum, o) => sum + o.items.reduce((s, i) => s + i.cost * i.qty, 0), 0),
+  );
+  const grossProfit = round2(totalRevenue - totalCost);
+  // Margin is a ratio (e.g. 0.375 = 37.5%) — keep more precision than money.
+  const margin = totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 10000) / 10000 : 0;
+  const byProfit = [...perf.values()].filter((p) => p.units > 0).sort((a, b) => b.profit - a.profit);
+
   return {
     totalRevenue,
+    totalCost,
+    grossProfit,
+    margin,
     totalOrders,
     averageOrderValue: totalOrders > 0 ? round2(totalRevenue / totalOrders) : 0,
     bestSellers: ranked.slice(0, 5),
     slowMovers: [...ranked].reverse().slice(0, 5),
+    mostProfitable: byProfit.slice(0, 5),
+    leastProfitable: [...byProfit].reverse().slice(0, 5),
     revenueByDay: [...dayTotals.entries()].map(([label, revenue]) => ({ label, revenue })),
     peakHours,
     peakHour,

@@ -9,6 +9,7 @@ const lineInput = (overrides: Partial<Omit<CartLine, 'qty'>> = {}): Omit<CartLin
   variantLabel: '2–4y',
   sku: 'DIN-1',
   unitPrice: 24,
+  cost: 0,
   taxRate: 0,
   available: 3,
   imageUri: null,

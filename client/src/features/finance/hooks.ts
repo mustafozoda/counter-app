@@ -4,8 +4,11 @@ import { ordersApi } from '@/api/orders';
 import { orderKeys } from '@/features/pos/hooks';
 import type { Transaction } from '@/types/models';
 
+// 'inventory' is intentionally NOT here: inventory purchases are recorded
+// automatically by stock intake (Phase 3) and counted in cash flow only —
+// adding them manually too would double-count. The label is kept below so
+// existing/auto inventory transactions still render with a friendly name.
 export const EXPENSE_CATEGORIES = [
-  'inventory',
   'rent',
   'utilities',
   'salaries',

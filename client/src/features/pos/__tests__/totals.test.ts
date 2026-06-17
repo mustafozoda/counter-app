@@ -14,6 +14,7 @@ const line = (overrides: Partial<CartLine> = {}): CartLine => ({
   variantLabel: '2–4y',
   sku: 'DIN-1',
   unitPrice: 24,
+  cost: 0,
   taxRate: 0,
   qty: 1,
   available: 10,

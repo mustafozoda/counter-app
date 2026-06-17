@@ -10,7 +10,7 @@ const order = (overrides: Partial<Order>, hour = 10): Order => ({
   channel: 'pos',
   customerId: null,
   items: [
-    { id: 'i1', variantId: 'v1', productName: 'Hoodie', variantLabel: '2–4y', qty: 1, unitPrice: 24, lineTotal: 24 },
+    { id: 'i1', variantId: 'v1', productName: 'Hoodie', variantLabel: '2–4y', qty: 1, unitPrice: 24, lineTotal: 24, cost: 10 },
   ],
   subtotal: 24,
   discount: 0,
@@ -43,8 +43,8 @@ describe('analyze', () => {
       [
         order({
           items: [
-            { id: 'a', variantId: 'v1', productName: 'Hoodie', variantLabel: 'Default', qty: 10, unitPrice: 24, lineTotal: 240 },
-            { id: 'b', variantId: 'v2', productName: 'Beanie', variantLabel: 'Default', qty: 1, unitPrice: 9, lineTotal: 9 },
+            { id: 'a', variantId: 'v1', productName: 'Hoodie', variantLabel: 'Default', qty: 10, unitPrice: 24, lineTotal: 240, cost: 12 },
+            { id: 'b', variantId: 'v2', productName: 'Beanie', variantLabel: 'Default', qty: 1, unitPrice: 9, lineTotal: 9, cost: 4 },
           ],
         }),
       ],
@@ -72,6 +72,37 @@ describe('analyze', () => {
     const report = analyze([order({ total: 30 })], 7, NOW);
     expect(report.revenueByDay).toHaveLength(7);
     expect(report.revenueByDay.reduce((a, b) => a + b.revenue, 0)).toBe(30);
+  });
+
+  it('computes profit and margin from per-line cost snapshots', () => {
+    const report = analyze(
+      [
+        order({
+          total: 80,
+          subtotal: 80,
+          items: [
+            {
+              id: 'p1',
+              variantId: 'v1',
+              productName: 'Shirt',
+              variantLabel: 'Default',
+              qty: 1,
+              unitPrice: 80,
+              lineTotal: 80,
+              cost: 50,
+            },
+          ],
+        }),
+      ],
+      30,
+      NOW,
+    );
+    expect(report.totalRevenue).toBe(80);
+    expect(report.totalCost).toBe(50);
+    expect(report.grossProfit).toBe(30);
+    expect(report.margin).toBe(0.375); // 37.5%
+    expect(report.mostProfitable[0]?.name).toBe('Shirt');
+    expect(report.mostProfitable[0]?.profit).toBe(30);
   });
 });
 

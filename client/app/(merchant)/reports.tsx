@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowLeft, BarChart3, Clock, Crown, TrendingDown } from 'lucide-react-native';
+import { ArrowLeft, BarChart3, Clock, Crown, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
@@ -92,6 +92,33 @@ function ReportsScreen() {
               </Card>
             </Animated.View>
 
+            {/* Profit & margin */}
+            <Animated.View
+              entering={FadeInDown.delay(20).springify().damping(18)}
+              className="mt-3 flex-row gap-3"
+            >
+              <Card className="flex-1 gap-1">
+                <Text variant="caption" tone="secondary">
+                  {t('reports.profit')}
+                </Text>
+                <CurrencyText
+                  amount={report.grossProfit}
+                  currency={currency}
+                  variant="h1"
+                  animated
+                  tone={report.grossProfit >= 0 ? 'positive' : 'negative'}
+                />
+              </Card>
+              <Card className="flex-1 gap-1">
+                <Text variant="caption" tone="secondary">
+                  {t('reports.margin')}
+                </Text>
+                <Text variant="h1" weight="bold">
+                  {(report.margin * 100).toFixed(1)}%
+                </Text>
+              </Card>
+            </Animated.View>
+
             {/* Revenue trend */}
             <Animated.View entering={FadeInDown.delay(40).springify().damping(18)} className="mt-3">
               <Card className="gap-3">
@@ -139,6 +166,61 @@ function ReportsScreen() {
                 ))}
               </Card>
             </Animated.View>
+
+            {/* Most profitable */}
+            {report.mostProfitable.length > 0 ? (
+              <Animated.View entering={FadeInDown.delay(100).springify().damping(18)} className="mt-3">
+                <Card className="gap-3">
+                  <View className="flex-row items-center gap-2">
+                    <TrendingUp size={16} color={colors.positive} strokeWidth={2} />
+                    <Text variant="caption" weight="medium" tone="secondary">
+                      {t('reports.mostProfitable')}
+                    </Text>
+                  </View>
+                  {report.mostProfitable.map((p) => (
+                    <View key={p.name} className="flex-row items-center justify-between gap-3">
+                      <Text variant="caption" weight="medium" numberOfLines={1} className="flex-1">
+                        {p.name}
+                      </Text>
+                      <CurrencyText
+                        amount={p.profit}
+                        currency={currency}
+                        variant="caption"
+                        weight="semibold"
+                        tone={p.profit >= 0 ? 'positive' : 'negative'}
+                      />
+                    </View>
+                  ))}
+                </Card>
+              </Animated.View>
+            ) : null}
+
+            {/* Least profitable */}
+            {report.leastProfitable.length > 1 ? (
+              <Animated.View entering={FadeInDown.delay(140).springify().damping(18)} className="mt-3">
+                <Card className="gap-2.5">
+                  <View className="flex-row items-center gap-2">
+                    <TrendingDown size={16} color={colors.inkSecondary} strokeWidth={2} />
+                    <Text variant="caption" weight="medium" tone="secondary">
+                      {t('reports.leastProfitable')}
+                    </Text>
+                  </View>
+                  {report.leastProfitable.map((p) => (
+                    <View key={p.name} className="flex-row items-center justify-between gap-3">
+                      <Text variant="caption" numberOfLines={1} className="flex-1">
+                        {p.name}
+                      </Text>
+                      <CurrencyText
+                        amount={p.profit}
+                        currency={currency}
+                        variant="caption"
+                        tone={p.profit >= 0 ? 'positive' : 'negative'}
+                      />
+                    </View>
+                  ))}
+                </Card>
+              </Animated.View>
+            ) : null}
 
             {/* Slow movers */}
             {report.slowMovers.length > 0 ? (

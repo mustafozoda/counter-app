@@ -8,6 +8,8 @@ export interface CartLine {
   variantLabel: string;
   sku: string;
   unitPrice: number;
+  /** Unit cost snapshot — copied onto the order line for profit / COGS. */
+  cost: number;
   /** Effective tax rate for this line (product override or store default). */
   taxRate: number;
   qty: number;
