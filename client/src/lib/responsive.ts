@@ -25,6 +25,13 @@ export const READABLE_MAX_WIDTH = 960;
 /** Outer cap for multi-column desktop dashboards on ultra-wide displays. */
 export const CONTENT_MAX_WIDTH = 1400;
 
+/**
+ * Centered content column for the customer storefront on desktop. Like most
+ * e-commerce sites, the storefront stays readable by capping its width and
+ * centering rather than stretching product grids across the whole monitor.
+ */
+export const STOREFRONT_MAX_WIDTH = 1100;
+
 const isWeb = Platform.OS === 'web';
 
 /** Layout tiers, coarse enough to drive column counts and chrome density. */
@@ -64,14 +71,23 @@ export function useResponsiveValue<T>(values: ResponsiveValues<T>): T {
 }
 
 /**
- * Width the UI should lay layouts out against: the true device width on native,
- * but capped to the phone frame on web so grids size exactly as they do on the
- * phone. Phone-framed screens (auth, storefront) rely on this cap even on a wide
- * browser; desktop screens measure their own container instead (columnsForWidth).
+ * Width the UI should lay layouts out against. On native it's the true device
+ * width. On web it's capped to the phone frame on a narrow window, and to the
+ * centered storefront column on a wide one — matching the width the storefront
+ * desktop shell centers content at, so product grids size to their container.
  */
 export function useContentWidth(): number {
   const { width } = useWindowDimensions();
-  return isWeb ? Math.min(width, APP_FRAME_WIDTH) : width;
+  if (!isWeb) return width;
+  if (width < WIDE_BREAKPOINT) return Math.min(width, APP_FRAME_WIDTH);
+  return Math.min(width, STOREFRONT_MAX_WIDTH);
+}
+
+/** Product-grid column count for the storefront at a given content width. */
+export function storefrontColumns(width: number): number {
+  if (width >= 1040) return 4;
+  if (width >= 760) return 3;
+  return 2;
 }
 
 /**

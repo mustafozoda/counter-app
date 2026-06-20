@@ -13,7 +13,7 @@ import { productStockStatus } from '@/features/products/stock';
 import { usePromotions } from '@/features/promotions/hooks';
 import { isPromotionLive, promotionSummary } from '@/features/promotions/validity';
 import { StorefrontProductCard } from '@/features/storefront/components/storefront-product-card';
-import { useContentWidth } from '@/lib/responsive';
+import { storefrontColumns, useContentWidth, useIsWide } from '@/lib/responsive';
 import { useStoreProfile } from '@/stores/store-profile';
 import { brandGradient } from '@/theme';
 
@@ -21,6 +21,7 @@ export default function StorefrontHome() {
   const router = useRouter();
   const { t } = useTranslation();
   const width = useContentWidth();
+  const isWide = useIsWide();
   const store = useStoreProfile((s) => s.store);
   const currency = store?.currencyCode ?? 'TJS';
 
@@ -36,7 +37,8 @@ export default function StorefrontHome() {
     [productsQuery.data],
   );
   const livePromo = promotions.find((p) => isPromotionLive(p));
-  const tileWidth = (width - 20 * 2 - 12) / 2;
+  const columns = isWide ? storefrontColumns(width) : 2;
+  const tileWidth = isWide ? (width - 40) / columns - 12 : (width - 20 * 2 - 12) / 2;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">

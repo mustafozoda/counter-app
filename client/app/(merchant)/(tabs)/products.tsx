@@ -37,6 +37,7 @@ import {
 import { TAB_BAR_CLEARANCE } from '@/components/ui/screen';
 import { CategoryPickerSheet, SortSheet } from '@/features/products/components/picker-sheets';
 import { ProductCard } from '@/features/products/components/product-card';
+import { ProductsDesktop } from '@/features/products/components/products-desktop';
 import { shareCatalogCsv } from '@/features/products/export';
 import {
   defaultCatalogFilter,
@@ -53,6 +54,7 @@ import {
   useSetProductStatus,
 } from '@/features/products/hooks';
 import type { ProductWithVariants } from '@/features/products/stock';
+import { useIsWide } from '@/lib/responsive';
 import { usePermission } from '@/stores/staff';
 import { useStoreProfile } from '@/stores/store-profile';
 import { toast } from '@/stores/toast';
@@ -80,6 +82,7 @@ export default function ProductsScreen() {
   const { t } = useTranslation();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const canManageInventory = usePermission('manage_inventory');
+  const isWide = useIsWide();
 
   const productsQuery = useProducts();
   const categoriesQuery = useCategories();
@@ -186,6 +189,9 @@ export default function ProductsScreen() {
       </View>
     </View>
   );
+
+  // Wide screens get a master–detail split; the phone list below is unchanged.
+  if (isWide) return <ProductsDesktop />;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">

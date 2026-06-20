@@ -111,10 +111,12 @@ export default function RootLayout() {
   // between the root and this column, and that wrapper collapses to 0 width
   // under a centering parent — which blanks the entire web app.
   const isWeb = Platform.OS === 'web';
-  // The merchant area renders its own full-width desktop shell on wide screens,
-  // so it opts out of the phone frame. Auth, onboarding and the storefront keep
-  // the centered phone-width column on web (their desktop layouts come later).
-  const framed = !(isWeb && isWide && segments[0] === '(merchant)');
+  // The merchant and storefront areas render their own desktop layouts on wide
+  // screens (sidebar shell / top-nav shell), so they opt out of the phone frame.
+  // Auth and onboarding keep the centered phone-width column on web.
+  const group = segments[0];
+  const hasDesktopLayout = group === '(merchant)' || group === '(storefront)';
+  const framed = !(isWeb && isWide && hasDesktopLayout);
 
   return (
     <GestureHandlerRootView style={isWeb ? { flex: 1, backgroundColor: '#000000' } : { flex: 1 }}>
