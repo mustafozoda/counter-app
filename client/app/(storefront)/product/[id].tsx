@@ -11,7 +11,7 @@ import { ProductImage } from '@/features/products/components/product-image';
 import { useProduct } from '@/features/products/hooks';
 import { variantLabel, variantPrice, variantStockStatus } from '@/features/products/stock';
 import { formatMoney } from '@/lib/format';
-import { useContentWidth } from '@/lib/responsive';
+import { useContentWidth, useIsWide } from '@/lib/responsive';
 import { haptics } from '@/lib/haptics';
 import { useStorefrontCart } from '@/stores/storefront-cart';
 import { useStoreProfile } from '@/stores/store-profile';
@@ -25,6 +25,7 @@ export default function StorefrontProductDetail() {
   const router = useRouter();
   const { t } = useTranslation();
   const width = useContentWidth();
+  const isWide = useIsWide();
   const { colors } = useTheme();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
@@ -94,6 +95,191 @@ export default function StorefrontProductDetail() {
       toast.warning(t('storefront.notEnoughStock'), t('storefront.reduceQty'));
     }
   };
+
+  // Desktop/tablet: a centered two-column product page (gallery + buy box).
+  if (isWide) {
+    return (
+      <Screen padded={false} edges={['top', 'left', 'right']} wideFullBleed>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ alignItems: 'center', paddingHorizontal: 32, paddingVertical: 28 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="w-full" style={{ maxWidth: 1000 }}>
+            <IconButton
+              icon={ArrowLeft}
+              variant="surface"
+              accessibilityLabel={t('actions.back')}
+              onPress={() => router.back()}
+            />
+            <View className="mt-4 flex-row gap-10">
+              {/* Gallery */}
+              <View style={{ flex: 1 }} className="gap-3">
+                <View className="overflow-hidden rounded-2xl border border-hairline">
+                  {product.images[0] ? (
+                    <Image
+                      source={{ uri: product.images[0] }}
+                      style={{ width: '100%', aspectRatio: 1 }}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                  ) : (
+                    <ProductImage product={product} size={460} radius={0} />
+                  )}
+                </View>
+                {product.images.length > 1 ? (
+                  <View className="flex-row flex-wrap gap-2">
+                    {product.images.slice(0, 5).map((uri) => (
+                      <Image
+                        key={uri}
+                        source={{ uri }}
+                        style={{ width: 76, height: 76, borderRadius: 12 }}
+                        contentFit="cover"
+                      />
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Buy box */}
+              <View style={{ flex: 1 }}>
+                <View className="flex-row items-start justify-between gap-3">
+                  <View className="flex-1">
+                    {product.brand ? (
+                      <Text variant="caption" weight="medium" tone="tertiary">
+                        {product.brand}
+                      </Text>
+                    ) : null}
+                    <Text variant="display" weight="bold">
+                      {product.name}
+                    </Text>
+                  </View>
+                  <IconButton
+                    icon={Heart}
+                    variant="surface"
+                    iconColor={wished ? colors.negative : colors.inkSecondary}
+                    accessibilityLabel={
+                      wished ? t('storefront.wishlistRemove') : t('storefront.wishlistSave')
+                    }
+                    onPress={() => {
+                      haptics.tap();
+                      toggleWish(product.id);
+                    }}
+                  />
+                </View>
+                <Text variant="displaySm" weight="bold" tone="accent" className="mt-2" tabular>
+                  {formatMoney(price, currency)}
+                </Text>
+                {product.description ? (
+                  <Text variant="body" tone="secondary" className="mt-3">
+                    {product.description}
+                  </Text>
+                ) : null}
+
+                {product.variants.length > 1 ? (
+                  <View className="mt-6 gap-3">
+                    <Text variant="title" weight="semibold">
+                      {t('storefront.chooseOption')}
+                    </Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {product.variants.map((variant) => {
+                        const out = variantStockStatus(variant) === 'out';
+                        const isSelected = selected?.id === variant.id;
+                        return (
+                          <PressableScale
+                            key={variant.id}
+                            scaleTo={0.95}
+                            haptic="selection"
+                            disabled={out}
+                            onPress={() => {
+                              setVariantId(variant.id);
+                              setQty(1);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: isSelected, disabled: out }}
+                            className={`h-11 flex-row items-center gap-2 rounded-full border px-4 ${
+                              isSelected
+                                ? 'border-primary bg-primary-tint'
+                                : 'border-hairline bg-surface dark:bg-surface-elevated'
+                            } ${out ? 'opacity-40' : ''}`}
+                          >
+                            {isSelected ? (
+                              <Check size={14} color={colors.primary} strokeWidth={2.5} />
+                            ) : null}
+                            <Text
+                              variant="caption"
+                              weight={isSelected ? 'semibold' : 'medium'}
+                              tone={isSelected ? 'accent' : 'secondary'}
+                            >
+                              {variantLabel(variant)}
+                            </Text>
+                          </PressableScale>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ) : null}
+
+                {!soldOut ? (
+                  <View className="mt-6 flex-row items-center gap-4">
+                    <Text variant="title" weight="semibold">
+                      {t('storefront.quantity')}
+                    </Text>
+                    <View className="h-11 flex-row items-center gap-1 rounded-full border border-hairline bg-surface p-1.5 dark:bg-surface-elevated">
+                      <IconButton
+                        icon={Minus}
+                        size={32}
+                        iconSize={15}
+                        variant="tonal"
+                        accessibilityLabel={t('storefront.decrease')}
+                        onPress={() => setQty((q) => Math.max(1, q - 1))}
+                      />
+                      <Text variant="title" weight="semibold" tabular className="min-w-8 text-center">
+                        {qty}
+                      </Text>
+                      <IconButton
+                        icon={Plus}
+                        size={32}
+                        iconSize={15}
+                        variant="tonal"
+                        accessibilityLabel={t('storefront.increase')}
+                        onPress={() => setQty((q) => Math.min(maxQty, q + 1))}
+                      />
+                    </View>
+                    {maxQty <= 5 ? (
+                      <Badge label={t('storefront.onlyLeft', { count: maxQty })} tone="caution" />
+                    ) : null}
+                  </View>
+                ) : null}
+
+                <View className="mt-8">
+                  {soldOut ? (
+                    <Button
+                      label={t('storefront.soldOut')}
+                      size="lg"
+                      fullWidth
+                      disabled
+                      onPress={() => {}}
+                    />
+                  ) : (
+                    <Button
+                      label={t('storefront.addToCartPrice', {
+                        price: formatMoney(price * qty, currency),
+                      })}
+                      icon={ShoppingBag}
+                      size="lg"
+                      fullWidth
+                      onPress={addToCart}
+                    />
+                  )}
+                </View>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </Screen>
+    );
+  }
 
   return (
     <Screen padded={false} edges={['top', 'left', 'right']}>

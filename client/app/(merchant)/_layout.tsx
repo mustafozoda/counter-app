@@ -1,7 +1,11 @@
 import { Stack } from 'expo-router';
 
+import { DesktopShell } from '@/components/layout/desktop-shell';
+import { useIsWide } from '@/lib/responsive';
+
 export default function MerchantLayout() {
-  return (
+  const isWide = useIsWide();
+  const stack = (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen
@@ -40,4 +44,8 @@ export default function MerchantLayout() {
       <Stack.Screen name="assistant" options={{ animation: 'slide_from_right' }} />
     </Stack>
   );
+
+  // Wide widths get the persistent sidebar shell wrapping the same stack; phones
+  // render the stack alone (full-screen push navigation, floating tab bar).
+  return isWide ? <DesktopShell>{stack}</DesktopShell> : stack;
 }

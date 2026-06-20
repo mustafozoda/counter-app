@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState, Text } from '@/components/ui';
 import { useProducts } from '@/features/products/hooks';
 import { StorefrontProductCard } from '@/features/storefront/components/storefront-product-card';
-import { useContentWidth } from '@/lib/responsive';
+import { storefrontColumns, useContentWidth, useIsWide } from '@/lib/responsive';
 import { useStoreProfile } from '@/stores/store-profile';
 import { useWishlist } from '@/stores/wishlist';
 
@@ -16,6 +16,7 @@ export default function StorefrontWishlist() {
   const router = useRouter();
   const { t } = useTranslation();
   const width = useContentWidth();
+  const isWide = useIsWide();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const productIds = useWishlist((s) => s.productIds);
   const productsQuery = useProducts();
@@ -24,7 +25,8 @@ export default function StorefrontWishlist() {
     () => (productsQuery.data ?? []).filter((p) => productIds.includes(p.id)),
     [productsQuery.data, productIds],
   );
-  const tileWidth = (width - 20 * 2 - 12) / 2;
+  const columns = isWide ? storefrontColumns(width) : 2;
+  const tileWidth = isWide ? (width - 40) / columns - 12 : (width - 20 * 2 - 12) / 2;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">

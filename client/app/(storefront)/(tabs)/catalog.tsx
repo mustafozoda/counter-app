@@ -10,7 +10,7 @@ import { Chip, EmptyState, SearchBar, Skeleton, Text } from '@/components/ui';
 import { useCategories, useProducts } from '@/features/products/hooks';
 import { priceRange, productStockStatus, type ProductWithVariants } from '@/features/products/stock';
 import { StorefrontProductCard } from '@/features/storefront/components/storefront-product-card';
-import { useContentWidth } from '@/lib/responsive';
+import { storefrontColumns, useContentWidth, useIsWide } from '@/lib/responsive';
 import { useStoreProfile } from '@/stores/store-profile';
 
 type Sort = 'featured' | 'price-asc' | 'price-desc';
@@ -20,6 +20,7 @@ export default function StorefrontCatalog() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ category?: string }>();
   const width = useContentWidth();
+  const isWide = useIsWide();
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
 
   const productsQuery = useProducts();
@@ -29,7 +30,8 @@ export default function StorefrontCatalog() {
   const [categoryId, setCategoryId] = useState<string | null>(params.category ?? null);
   const [sort, setSort] = useState<Sort>('featured');
 
-  const tileWidth = (width - 20 * 2 - 12) / 2;
+  const columns = isWide ? storefrontColumns(width) : 2;
+  const tileWidth = isWide ? (width - 40) / columns - 12 : (width - 20 * 2 - 12) / 2;
 
   const products = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -94,11 +96,12 @@ export default function StorefrontCatalog() {
         </View>
       ) : (
         <FlashList
+          key={columns}
           data={products}
-          numColumns={2}
+          numColumns={columns}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={<View className="px-5 pt-1">{header}</View>}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: isWide ? 40 : 110 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EmptyState
@@ -112,12 +115,14 @@ export default function StorefrontCatalog() {
               }}
             />
           }
-          renderItem={({ item, index }) => (
+          renderItem={({ item, index }) => {
+            const col = index % columns;
+            return (
             <View
               style={{
                 paddingBottom: 12,
-                paddingLeft: index % 2 === 1 ? 6 : 0,
-                paddingRight: index % 2 === 0 ? 6 : 0,
+                paddingLeft: isWide ? (col === 0 ? 0 : 6) : index % 2 === 1 ? 6 : 0,
+                paddingRight: isWide ? (col === columns - 1 ? 0 : 6) : index % 2 === 0 ? 6 : 0,
               }}
             >
               <StorefrontProductCard
@@ -127,7 +132,8 @@ export default function StorefrontCatalog() {
                 onPress={() => router.push({ pathname: '/(storefront)/product/[id]', params: { id: item.id } })}
               />
             </View>
-          )}
+            );
+          }}
         />
       )}
     </SafeAreaView>

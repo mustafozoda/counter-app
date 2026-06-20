@@ -5,9 +5,11 @@ import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Badge, Card, EmptyState, Screen, Skeleton, Text } from '@/components/ui';
+import { OrdersDesktop } from '@/features/pos/components/orders-desktop';
 import { useOrders } from '@/features/pos/hooks';
 import { PAYMENT_METHOD_LABELS } from '@/features/pos/receipt';
 import { formatDayLabel, formatMoney } from '@/lib/format';
+import { useIsWide } from '@/lib/responsive';
 import { useStoreProfile } from '@/stores/store-profile';
 import { useTheme } from '@/theme';
 
@@ -18,6 +20,10 @@ export default function OrdersScreen() {
   const currency = useStoreProfile((s) => s.store?.currencyCode ?? 'TJS');
   const ordersQuery = useOrders();
   const orders = ordersQuery.data ?? [];
+  const isWide = useIsWide();
+
+  // Wide screens get a master–detail split; the phone list below is unchanged.
+  if (isWide) return <OrdersDesktop />;
 
   return (
     <Screen scroll tabbed>

@@ -20,7 +20,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'nativewind';
@@ -32,7 +32,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { queryClient } from '@/api/query-client';
 import { ToastHost } from '@/components/ui';
 import { changeLanguage, deviceLanguage, initI18n, isRtlLanguage } from '@/i18n';
-import { APP_FRAME_WIDTH } from '@/lib/responsive';
+import { APP_FRAME_WIDTH, useIsWide } from '@/lib/responsive';
 import { useAuthStore } from '@/stores/auth';
 import { usePreferences } from '@/stores/preferences';
 import { useStoreProfile } from '@/stores/store-profile';
@@ -64,6 +64,8 @@ export default function RootLayout() {
   const prefsHydrated = usePreferences((s) => s.hasHydrated);
 
   const { colorScheme, setColorScheme } = useColorScheme();
+  const segments = useSegments();
+  const isWide = useIsWide();
 
   useEffect(() => {
     if (prefsHydrated) setColorScheme(themeMode);
@@ -109,13 +111,19 @@ export default function RootLayout() {
   // between the root and this column, and that wrapper collapses to 0 width
   // under a centering parent — which blanks the entire web app.
   const isWeb = Platform.OS === 'web';
+  // The merchant and storefront areas render their own desktop layouts on wide
+  // screens (sidebar shell / top-nav shell), so they opt out of the phone frame.
+  // Auth and onboarding keep the centered phone-width column on web.
+  const group = segments[0];
+  const hasDesktopLayout = group === '(merchant)' || group === '(storefront)';
+  const framed = !(isWeb && isWide && hasDesktopLayout);
 
   return (
     <GestureHandlerRootView style={isWeb ? { flex: 1, backgroundColor: '#000000' } : { flex: 1 }}>
       <KeyboardProvider>
         <View
           style={
-            isWeb
+            isWeb && framed
               ? { flex: 1, width: '100%', maxWidth: APP_FRAME_WIDTH, alignSelf: 'center' }
               : { flex: 1 }
           }

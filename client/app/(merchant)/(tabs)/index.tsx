@@ -25,6 +25,7 @@ import {
   StatCard,
   Text,
 } from '@/components/ui';
+import { DesktopHome } from '@/features/dashboard/desktop-home';
 import { summarize, type FinancePeriod } from '@/features/finance/aggregate';
 import { useTransactions } from '@/features/finance/hooks';
 import { usePlans } from '@/features/financing/hooks';
@@ -33,6 +34,7 @@ import { useOrders } from '@/features/pos/hooks';
 import { lowStockProducts } from '@/features/products/filtering';
 import { useProducts } from '@/features/products/hooks';
 import { formatCompact } from '@/lib/format';
+import { useIsWide } from '@/lib/responsive';
 import { useStoreProfile } from '@/stores/store-profile';
 import { STAGGER_MS, useTheme } from '@/theme';
 
@@ -54,6 +56,7 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useTranslation();
+  const isWide = useIsWide();
   const store = useStoreProfile((s) => s.store);
   const [period, setPeriod] = useState<FinancePeriod>('today');
 
@@ -84,6 +87,10 @@ export default function HomeScreen() {
     FadeInDown.delay(STAGGER_MS * index)
       .springify()
       .damping(18);
+
+  // Wide screens (tablet/laptop/desktop) get a dedicated multi-column dashboard;
+  // the phone layout below is rendered unchanged on compact widths.
+  if (isWide) return <DesktopHome />;
 
   return (
     <Screen scroll tabbed>
