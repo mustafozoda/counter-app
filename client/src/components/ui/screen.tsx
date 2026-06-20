@@ -4,6 +4,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { cn } from '@/lib/cn';
+import { READABLE_MAX_WIDTH, useIsWide } from '@/lib/responsive';
 
 export interface ScreenProps {
   children: ReactNode;
@@ -17,6 +18,8 @@ export interface ScreenProps {
   edges?: Edge[];
   className?: string;
   contentClassName?: string;
+  /** Let content span the full width on wide screens (dashboards, split views). */
+  wideFullBleed?: boolean;
 }
 
 /** Clearance for the floating tab bar (height + offsets). */
@@ -32,7 +35,14 @@ export function Screen({
   edges = ['top', 'left', 'right'],
   className,
   contentClassName,
+  wideFullBleed = false,
 }: ScreenProps) {
+  const isWide = useIsWide();
+  // On wide screens, cap a screen's content to a readable column and center it
+  // so forms and lists don't sprawl across the desktop shell's content area.
+  // Phones never hit this branch, so the mobile layout is unchanged.
+  const capped = isWide && !wideFullBleed;
+
   const content = scroll ? (
     <ScrollView
       className="flex-1"
@@ -41,14 +51,26 @@ export function Screen({
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      {children}
+      {capped ? (
+        <View className="w-full self-center" style={{ maxWidth: READABLE_MAX_WIDTH }}>
+          {children}
+        </View>
+      ) : (
+        children
+      )}
     </ScrollView>
   ) : (
     <View
       className={cn('flex-1', padded && 'px-5', contentClassName)}
       style={tabbed ? { paddingBottom: TAB_BAR_CLEARANCE } : undefined}
     >
-      {children}
+      {capped ? (
+        <View className="w-full flex-1 self-center" style={{ maxWidth: READABLE_MAX_WIDTH }}>
+          {children}
+        </View>
+      ) : (
+        children
+      )}
     </View>
   );
 
